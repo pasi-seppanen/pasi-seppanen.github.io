@@ -1,127 +1,279 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pasi Seppanen</title>
+  <title>How I Built This — Pasi Seppanen</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0f0f0f;
-      --surface: #1a1a1a;
-      --border: #2a2a2a;
-      --text: #e8e8e8;
+      --bg: #faf9f7;
+      --text: #1a1a1a;
       --muted: #888;
-      --accent: #6ee7b7;
+      --subtle: #f0ede8;
+      --accent: #2a6b4f;
+      --accent-light: #e8f5f0;
+      --border: #e0dbd4;
     }
 
     body {
       font-family: 'Georgia', serif;
       background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 2rem;
-    }
-
-    .container {
-      max-width: 640px;
-      width: 100%;
-    }
-
-    header {
-      margin-bottom: 3rem;
-    }
-
-    .name {
-      font-size: clamp(2.5rem, 8vw, 4.5rem);
-      font-weight: normal;
-      letter-spacing: -0.02em;
-      line-height: 1;
-      color: var(--text);
-    }
-
-    .name span {
-      color: var(--accent);
-    }
-
-    .tagline {
-      margin-top: 1rem;
-      font-size: 1.1rem;
-      color: var(--muted);
-      font-style: italic;
-    }
-
-    .divider {
-      width: 40px;
-      height: 2px;
-      background: var(--accent);
-      margin: 2.5rem 0;
-    }
-
-    .bio {
-      font-size: 1.05rem;
       line-height: 1.8;
-      color: #ccc;
+      padding: 0;
     }
 
-    .links {
-      margin-top: 3rem;
+    /* Header */
+    .site-header {
+      padding: 2rem 2rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+    .site-header .logo {
+      font-size: 1.1rem;
+      font-weight: normal;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .site-header .logo span { color: var(--muted); }
+
+    /* Hero */
+    .hero {
+      max-width: 720px;
+      margin: 4rem auto 0;
+      padding: 0 2rem;
+    }
+    .hero-label {
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: normal;
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+    }
+    .hero-meta {
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
       display: flex;
       gap: 1.5rem;
       flex-wrap: wrap;
-    }
-
-    .links a {
-      color: var(--muted);
-      text-decoration: none;
-      font-family: 'Courier New', monospace;
-      font-size: 0.85rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+      padding-bottom: 2.5rem;
       border-bottom: 1px solid var(--border);
-      padding-bottom: 2px;
-      transition: color 0.2s, border-color 0.2s;
     }
 
-    .links a:hover {
+    /* Illustration */
+    .illustration {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 2rem;
+    }
+    .illustration svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 12px;
+    }
+
+    /* Article body */
+    .article {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 0 2rem 5rem;
+    }
+    .article p {
+      font-size: 1.08rem;
+      line-height: 1.85;
+      color: #333;
+      margin-bottom: 1.6rem;
+    }
+    .article p:first-child::first-letter {
+      font-size: 3.2rem;
+      line-height: 0.8;
+      float: left;
+      margin: 0.1em 0.12em 0 0;
       color: var(--accent);
-      border-color: var(--accent);
+      font-weight: normal;
+    }
+    .article h2 {
+      font-size: 1.35rem;
+      font-weight: normal;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      margin: 2.8rem 0 1rem;
     }
 
+    /* Pull quote */
+    .pullquote {
+      border-left: 3px solid var(--accent);
+      margin: 2.5rem 0;
+      padding: 0.75rem 0 0.75rem 1.5rem;
+      font-size: 1.2rem;
+      line-height: 1.6;
+      font-style: italic;
+      color: #444;
+    }
+
+    /* Inline illustration 2 */
+    .inline-illo {
+      margin: 2.5rem 0;
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--accent-light);
+    }
+    .inline-illo svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Footer */
     footer {
-      margin-top: 5rem;
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    footer p {
       font-family: 'Courier New', monospace;
-      font-size: 0.75rem;
-      color: var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    footer a {
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid currentColor;
+      padding-bottom: 1px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1 class="name">Pasi<span>.</span></h1>
-      <p class="tagline">seppanen.eu</p>
-    </header>
 
-    <div class="divider"></div>
+  <header class="site-header">
+    <a class="logo" href="/">Pasi<span>.</span>seppanen.eu</a>
+  </header>
 
-    <p class="bio">
-      Welcome to my corner of the internet.
-    </p>
+  <!-- Hero -->
+  <section class="hero">
+    <p class="hero-label">Personal essay</p>
+    <h1>I asked an AI to build me a website.<br>It actually worked.</h1>
+    <div class="hero-meta">
+      <span>Pasi Seppanen</span>
+      <span>March 2026</span>
+      <span>5 min read</span>
+    </div>
+  </section>
 
-    <nav class="links">
-      <a href="mailto:pasi@seppanen.eu">Email</a>
-      <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://linkedin.com" target="_blank" rel="noopener">LinkedIn</a>
-    </nav>
-
-    <footer>seppanen.eu</footer>
+  <!-- Hero illustration: abstract conversation bubbles -->
+  <div class="illustration">
+    <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="700" height="320" fill="#e8f5f0" rx="12"/>
+      <!-- Background soft circles -->
+      <circle cx="580" cy="60" r="90" fill="#d0ebe0" opacity="0.5"/>
+      <circle cx="100" cy="260" r="70" fill="#d0ebe0" opacity="0.4"/>
+      <!-- User bubble (right) -->
+      <rect x="390" y="50" width="240" height="56" rx="16" fill="#2a6b4f"/>
+      <polygon points="610,106 630,118 610,106" fill="#2a6b4f"/>
+      <text x="510" y="82" text-anchor="middle" font-family="Georgia, serif" font-size="13.5" fill="white">"Set up an email address</text>
+      <text x="510" y="99" text-anchor="middle" font-family="Georgia, serif" font-size="13.5" fill="white">for me at seppanen.eu"</text>
+      <!-- AI bubble (left) -->
+      <rect x="68" y="130" width="270" height="56" rx="16" fill="white" stroke="#c8e0d8" stroke-width="1.5"/>
+      <polygon points="88,130 68,118 88,130" fill="white" stroke="#c8e0d8" stroke-width="1.5"/>
+      <text x="203" y="162" text-anchor="middle" font-family="Georgia, serif" font-size="13.5" fill="#1a1a1a">Done. Your email forwards</text>
+      <text x="203" y="179" text-anchor="middle" font-family="Georgia, serif" font-size="13.5" fill="#1a1a1a">to your inbox. &#10003;</text>
+      <!-- User bubble 2 (right) -->
+      <rect x="390" y="210" width="240" height="56" rx="16" fill="#2a6b4f"/>
+      <polygon points="610,266 630,254 610,266" fill="#2a6b4f"/>
+      <text x="510" y="242" text-anchor="middle" font-family="Georgia, serif" font-size="13.5" fill="white">"Now build me a website</text>
+      <text x="510" y="259" text-anchor="middle" font-family="Georgia, serif" font-size="13.5" fill="white">at that domain"</text>
+      <!-- Small decorative dots -->
+      <circle cx="346" cy="170" r="5" fill="#2a6b4f" opacity="0.3"/>
+      <circle cx="362" cy="170" r="5" fill="#2a6b4f" opacity="0.5"/>
+      <circle cx="378" cy="170" r="5" fill="#2a6b4f" opacity="0.7"/>
+    </svg>
   </div>
+
+  <!-- Article body -->
+  <article class="article">
+
+    <p>A few weeks ago I decided I wanted my own little corner of the internet — a proper address, a real email, a website with my name on it. Nothing fancy. But I hadn't written a line of code in years, and I had no desire to start again. So I tried something different: I just asked Claude.</p>
+
+    <p>Claude is an AI assistant made by Anthropic. Think of it as a very capable helper you can have a conversation with — one that happens to know a great deal about computers, websites, and how things work on the internet. Rather than learning all of that myself, I simply described what I wanted in plain language, and Claude did the rest.</p>
+
+    <h2>First: a proper email address</h2>
+
+    <p>I already owned the domain <em>seppanen.eu</em> — I'd had it registered for years, sitting unused. My first goal was to get a proper email address there. I wanted <em>pasi@seppanen.eu</em>, something that looked like it belonged to a real person rather than a free webmail account.</p>
+
+    <p>The catch: actually running your own email server is notoriously complicated. Instead, the trick is to set up <em>forwarding</em> — any email sent to your custom address gets quietly redirected to an inbox you already use. I told Claude what I wanted, and within a few minutes it had walked me through exactly which settings to change at my domain registrar. I clicked the buttons it described. It worked first try.</p>
+
+    <!-- Inline illustration: email forwarding diagram -->
+    <div class="inline-illo">
+      <svg viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="600" height="160" fill="#e8f5f0"/>
+        <!-- Arrow line -->
+        <line x1="155" y1="80" x2="445" y2="80" stroke="#2a6b4f" stroke-width="2" stroke-dasharray="6,4"/>
+        <polygon points="445,74 458,80 445,86" fill="#2a6b4f"/>
+        <!-- Left box: custom email -->
+        <rect x="30" y="50" width="125" height="60" rx="10" fill="white" stroke="#c8e0d8" stroke-width="1.5"/>
+        <text x="92" y="76" text-anchor="middle" font-family="Courier New, monospace" font-size="11" fill="#2a6b4f">pasi@</text>
+        <text x="92" y="93" text-anchor="middle" font-family="Courier New, monospace" font-size="11" fill="#2a6b4f">seppanen.eu</text>
+        <!-- Right box: real inbox -->
+        <rect x="445" y="50" width="125" height="60" rx="10" fill="white" stroke="#c8e0d8" stroke-width="1.5"/>
+        <text x="507" y="76" text-anchor="middle" font-family="Georgia, serif" font-size="11.5" fill="#444">your real</text>
+        <text x="507" y="93" text-anchor="middle" font-family="Georgia, serif" font-size="11.5" fill="#444">inbox</text>
+        <!-- Label -->
+        <text x="300" y="68" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#2a6b4f" font-style="italic">forwards automatically</text>
+      </svg>
+    </div>
+
+    <h2>Then: an actual website</h2>
+
+    <p>With email sorted, I turned to the bigger goal: a website. I wanted something at <em>seppanen.eu</em> that felt like it was mine. Not a template, not a drag-and-drop builder — something genuinely made for me.</p>
+
+    <p>GitHub Pages is a free service that hosts simple websites directly from a code repository. It sounds technical, and in truth it is — but I didn't have to understand any of it. I told Claude "I want a website hosted for free with a custom domain", and it guided me through the whole thing step by step: setting up a GitHub account, creating a repository, writing the initial page, configuring the settings so the site would appear at my domain instead of some generic GitHub address.</p>
+
+    <div class="pullquote">
+      "I never opened a text editor. I never looked at a command line. I just described what I wanted, and Claude took care of it."
+    </div>
+
+    <p>At one point there was a warning about some software versions being out of date. Claude spotted it, explained what it meant in plain English, checked the latest available versions, and updated everything — all while I watched. When the DNS records needed changing so my domain would point to the right place, Claude looked at the settings panel with me and confirmed that everything was already correct from a previous setup.</p>
+
+    <h2>What this actually felt like</h2>
+
+    <p>The experience was genuinely strange, in a good way. I've always thought of building a website as something that requires a certain kind of technical fluency — a language I never fully learned. This felt more like having a knowledgeable friend sitting next to me, one who speaks both "normal person" and "computer" fluently, translating between the two as needed.</p>
+
+    <p>I made decisions. Claude executed them. The whole thing — email setup, website, domain configuration, getting HTTPS working — took an afternoon. None of it required me to understand the underlying machinery. I just had to know what I wanted.</p>
+
+    <p>The page you're reading right now is the result. It was written by me, designed and built by Claude, hosted for free, and lives at an address that's been mine for years but never had anything at it — until now.</p>
+
+    <p style="margin-top:2.5rem; font-family:'Courier New',monospace; font-size:0.85rem; color: #888;">— Pasi, March 2026</p>
+
+  </article>
+
+  <footer>
+    <p>&copy; 2026 Pasi Seppanen</p>
+    <a href="mailto:pasi@seppanen.eu">pasi@seppanen.eu</a>
+  </footer>
+
 </body>
 </html>
