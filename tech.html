@@ -6,7 +6,6 @@
   <title>How This Site Works — Pasi Seppanen</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
       --bg: #faf9f7;
       --text: #1a1a1a;
@@ -15,14 +14,7 @@
       --accent-light: #e8f5f0;
       --border: #e0dbd4;
     }
-
-    body {
-      font-family: 'Georgia', serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    /* Topbar */
+    body { font-family: 'Georgia', serif; background: var(--bg); color: var(--text); }
     .topbar {
       background: var(--accent-light);
       border-bottom: 1px solid var(--border);
@@ -33,8 +25,6 @@
       color: var(--accent);
       letter-spacing: 0.04em;
     }
-
-    /* Nav */
     nav.main-nav {
       background: var(--bg);
       border-bottom: 2px solid var(--border);
@@ -47,11 +37,7 @@
       justify-content: flex-end;
       height: 60px;
     }
-    .nav-links {
-      display: flex;
-      gap: 2rem;
-      list-style: none;
-    }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
     .nav-links a {
       font-family: 'Courier New', monospace;
       font-size: 0.72rem;
@@ -63,18 +49,8 @@
       padding-bottom: 2px;
       transition: color 0.2s, border-color 0.2s;
     }
-    .nav-links a:hover, .nav-links a.active {
-      color: var(--accent);
-      border-color: var(--accent);
-    }
-
-    /* Page */
-    .page {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 3.5rem 2rem 5rem;
-    }
-
+    .nav-links a:hover, .nav-links a.active { color: var(--accent); border-color: var(--accent); }
+    .page { max-width: 900px; margin: 0 auto; padding: 3.5rem 2rem 5rem; }
     .page-label {
       font-family: 'Courier New', monospace;
       font-size: 0.72rem;
@@ -97,19 +73,8 @@
       margin-bottom: 3rem;
       line-height: 1.6;
     }
-
-    /* Stack diagram */
-    .stack-diagram {
-      width: 100%;
-      margin-bottom: 3.5rem;
-    }
-    .stack-diagram svg {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-
-    /* Cards grid */
+    .stack-diagram { width: 100%; margin-bottom: 3.5rem; }
+    .stack-diagram svg { width: 100%; height: auto; display: block; }
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -124,11 +89,7 @@
       flex-direction: column;
       gap: 0.5rem;
     }
-    .card-icon {
-      width: 36px;
-      height: 36px;
-      margin-bottom: 0.25rem;
-    }
+    .card-icon { width: 36px; height: 36px; margin-bottom: 0.25rem; }
     .card-icon svg { width: 100%; height: 100%; }
     .card-name {
       font-family: 'Courier New', monospace;
@@ -138,17 +99,8 @@
       color: var(--accent);
       font-weight: bold;
     }
-    .card-role {
-      font-size: 0.92rem;
-      font-style: italic;
-      color: var(--text);
-    }
-    .card-desc {
-      font-size: 0.83rem;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
+    .card-role { font-size: 0.92rem; font-style: italic; color: var(--text); }
+    .card-desc { font-size: 0.83rem; color: var(--muted); line-height: 1.5; }
     .section-title {
       font-family: 'Courier New', monospace;
       font-size: 0.72rem;
@@ -159,7 +111,6 @@
       padding-bottom: 0.5rem;
       border-bottom: 1px solid var(--border);
     }
-
     footer {
       background: var(--accent);
       color: rgba(255,255,255,0.7);
@@ -176,199 +127,210 @@
 </head>
 <body>
 
-  <div class="topbar">pasi@seppanen.eu — personal writing</div>
+<div class="topbar">pasi@seppanen.eu &mdash; personal writing</div>
 
-  <nav class="main-nav">
-    <ul class="nav-links">
-      <li><a href="/">Home</a></li>
-      <li><a href="/tech.html" class="active">Technology</a></li>
-      <li><a href="https://www.linkedin.com/in/pasis/" target="_blank" rel="noopener">Personal</a></li>
-      <li><a href="mailto:pasi@seppanen.eu">Contact</a></li>
-    </ul>
-  </nav>
+<nav class="main-nav">
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="/tech.html" class="active">Technology</a></li>
+    <li><a href="https://www.linkedin.com/in/pasis/" target="_blank" rel="noopener">Personal</a></li>
+    <li><a href="mailto:pasi@seppanen.eu">Contact</a></li>
+  </ul>
+</nav>
 
-  <div class="page">
+<div class="page">
+  <p class="page-label">Under the hood</p>
+  <h1 class="page-title">How this site is built and run</h1>
+  <p class="page-sub">A plain-English map of the technology behind seppanen.eu &mdash; from the domain to the code, and the AI that tied it all together.</p>
 
-    <p class="page-label">Under the hood</p>
-    <h1 class="page-title">How this site is built and run</h1>
-    <p class="page-sub">A plain-English map of the technology behind seppanen.eu — from the domain to the code, and the AI that tied it all together.</p>
+  <!-- Stack flow diagram -->
+  <div class="stack-diagram">
+    <svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg" font-family="Georgia, serif">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#2a6b4f" opacity="0.5"/>
+        </marker>
+      </defs>
 
-    <!-- Stack flow diagram -->
-    <div class="stack-diagram">
-      <svg viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg" font-family="Georgia, serif">
-        <defs>
-          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L8,3 z" fill="#2a6b4f" opacity="0.5"/>
-          </marker>
-        </defs>
+      <!-- Background -->
+      <rect width="900" height="340" rx="14" fill="#e8f5f0"/>
 
-        <!-- Background -->
-        <rect width="820" height="300" rx="14" fill="#e8f5f0"/>
+      <!-- TOP ROW: DOMAIN -->
+      <text x="30" y="52" font-family="Courier New, monospace" font-size="9" fill="#2a6b4f" letter-spacing="2" opacity="0.7">DOMAIN</text>
+      <rect x="30" y="60" width="130" height="64" rx="10" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
+      <text x="95" y="88" text-anchor="middle" font-size="13" fill="#2a6b4f" font-style="italic">Louhi</text>
+      <text x="95" y="106" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">seppanen.eu</text>
+      <line x1="160" y1="92" x2="196" y2="92" stroke="#2a6b4f" stroke-width="1.5" opacity="0.4" marker-end="url(#arr)"/>
 
-        <!-- Layer label: Domain -->
-        <text x="30" y="60" font-family="Courier New, monospace" font-size="9" fill="#2a6b4f" letter-spacing="2" opacity="0.7">DOMAIN</text>
-        <!-- Louhi box -->
-        <rect x="30" y="68" width="140" height="64" rx="10" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
-        <text x="100" y="96" text-anchor="middle" font-size="13" fill="#2a6b4f" font-style="italic">Louhi</text>
-        <text x="100" y="113" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">seppanen.eu</text>
+      <!-- EMAIL -->
+      <text x="200" y="52" font-family="Courier New, monospace" font-size="9" fill="#2a6b4f" letter-spacing="2" opacity="0.7">EMAIL</text>
+      <rect x="200" y="60" width="130" height="64" rx="10" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
+      <text x="265" y="88" text-anchor="middle" font-size="13" fill="#2a6b4f" font-style="italic">ImprovMX</text>
+      <text x="265" y="106" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">email forwarding</text>
+      <line x1="330" y1="92" x2="366" y2="92" stroke="#2a6b4f" stroke-width="1.5" opacity="0.4" marker-end="url(#arr)"/>
 
-        <!-- Arrow 1 -->
-        <line x1="170" y1="100" x2="210" y2="100" stroke="#2a6b4f" stroke-width="1.5" opacity="0.4" marker-end="url(#arr)"/>
+      <!-- CODE -->
+      <text x="370" y="52" font-family="Courier New, monospace" font-size="9" fill="#2a6b4f" letter-spacing="2" opacity="0.7">CODE</text>
+      <rect x="370" y="60" width="130" height="64" rx="10" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
+      <text x="435" y="88" text-anchor="middle" font-size="13" fill="#2a6b4f" font-style="italic">GitHub</text>
+      <text x="435" y="106" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">repository + CI</text>
+      <line x1="500" y1="92" x2="536" y2="92" stroke="#2a6b4f" stroke-width="1.5" opacity="0.4" marker-end="url(#arr)"/>
 
-        <!-- Layer label: Email -->
-        <text x="215" y="60" font-family="Courier New, monospace" font-size="9" fill="#2a6b4f" letter-spacing="2" opacity="0.7">EMAIL</text>
-        <!-- ImprovMX box -->
-        <rect x="215" y="68" width="140" height="64" rx="10" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
-        <text x="285" y="96" text-anchor="middle" font-size="13" fill="#2a6b4f" font-style="italic">ImprovMX</text>
-        <text x="285" y="113" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">email forwarding</text>
+      <!-- LIVE SITE -->
+      <text x="540" y="52" font-family="Courier New, monospace" font-size="9" fill="#2a6b4f" letter-spacing="2" opacity="0.7">LIVE SITE</text>
+      <rect x="540" y="60" width="160" height="64" rx="10" fill="#2a6b4f"/>
+      <text x="620" y="88" text-anchor="middle" font-size="13" fill="white" font-style="italic">GitHub Pages</text>
+      <text x="620" y="106" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="rgba(255,255,255,0.7)">seppanen.eu (free)</text>
 
-        <!-- Arrow 2 -->
-        <line x1="355" y1="100" x2="395" y2="100" stroke="#2a6b4f" stroke-width="1.5" opacity="0.4" marker-end="url(#arr)"/>
+      <!-- FEEDBACK: arrow down from GitHub Pages, then to Formspree -->
+      <line x1="620" y1="124" x2="620" y2="152" stroke="#2a6b4f" stroke-width="1.5" opacity="0.4" marker-end="url(#arr)"/>
+      <text x="540" y="168" font-family="Courier New, monospace" font-size="9" fill="#2a6b4f" letter-spacing="2" opacity="0.7">FEEDBACK</text>
+      <rect x="540" y="174" width="160" height="64" rx="10" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
+      <text x="620" y="202" text-anchor="middle" font-size="13" fill="#2a6b4f" font-style="italic">Formspree</text>
+      <text x="620" y="220" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">visitor reactions</text>
+      <!-- Arrow from Formspree to email -->
+      <line x1="540" y1="206" x2="374" y2="206" stroke="#2a6b4f" stroke-width="1.5" opacity="0.4" marker-end="url(#arr)"/>
+      <text x="430" y="198" text-anchor="middle" font-family="Courier New,monospace" font-size="9" fill="#888" font-style="italic">notifies</text>
+      <rect x="200" y="174" width="170" height="64" rx="10" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
+      <text x="285" y="202" text-anchor="middle" font-size="13" fill="#2a6b4f" font-style="italic">pasi@seppanen.eu</text>
+      <text x="285" y="220" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">your real inbox</text>
 
-        <!-- Layer label: Code -->
-        <text x="400" y="60" font-family="Courier New, monospace" font-size="9" fill="#2a6b4f" letter-spacing="2" opacity="0.7">CODE</text>
-        <!-- GitHub box -->
-        <rect x="400" y="68" width="140" height="64" rx="10" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
-        <text x="470" y="96" text-anchor="middle" font-size="13" fill="#2a6b4f" font-style="italic">GitHub</text>
-        <text x="470" y="113" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">repository + hosting</text>
+      <!-- Divider -->
+      <line x1="30" y1="268" x2="870" y2="268" stroke="#b8ddd0" stroke-width="1" stroke-dasharray="4,4"/>
 
-        <!-- Arrow 3 -->
-        <line x1="540" y1="100" x2="580" y2="100" stroke="#2a6b4f" stroke-width="1.5" opacity="0.4" marker-end="url(#arr)"/>
+      <!-- BUILT WITH row -->
+      <text x="30" y="288" font-family="Courier New, monospace" font-size="9" fill="#2a6b4f" letter-spacing="2" opacity="0.7">BUILT WITH</text>
 
-        <!-- Layer label: Live -->
-        <text x="585" y="60" font-family="Courier New, monospace" font-size="9" fill="#2a6b4f" letter-spacing="2" opacity="0.7">LIVE SITE</text>
-        <!-- Pages box -->
-        <rect x="585" y="68" width="200" height="64" rx="10" fill="#2a6b4f"/>
-        <text x="685" y="96" text-anchor="middle" font-size="13" fill="white" font-style="italic">GitHub Pages</text>
-        <text x="685" y="113" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="rgba(255,255,255,0.7)">seppanen.eu (free hosting)</text>
+      <!-- Claude -->
+      <rect x="30" y="296" width="130" height="30" rx="8" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
+      <text x="95" y="316" text-anchor="middle" font-size="11" fill="#2a6b4f" font-style="italic">Claude (Anthropic)</text>
 
-        <!-- Divider -->
-        <line x1="30" y1="165" x2="790" y2="165" stroke="#b8ddd0" stroke-width="1" stroke-dasharray="4,4"/>
+      <!-- HTML &amp; CSS -->
+      <rect x="175" y="296" width="130" height="30" rx="8" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
+      <text x="240" y="316" text-anchor="middle" font-family="Courier New,monospace" font-size="11" fill="#2a6b4f">HTML &amp; CSS</text>
 
-        <!-- Bottom row: built with -->
-        <text x="30" y="188" font-family="Courier New, monospace" font-size="9" fill="#2a6b4f" letter-spacing="2" opacity="0.7">BUILT WITH</text>
+      <!-- Inline SVG -->
+      <rect x="320" y="296" width="130" height="30" rx="8" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
+      <text x="385" y="316" text-anchor="middle" font-size="11" fill="#2a6b4f" font-style="italic">Inline SVG</text>
 
-        <!-- Claude box -->
-        <rect x="30" y="196" width="150" height="72" rx="10" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
-        <text x="105" y="224" text-anchor="middle" font-size="13" fill="#2a6b4f" font-style="italic">Claude</text>
-        <text x="105" y="241" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">AI assistant</text>
-        <text x="105" y="256" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">by Anthropic</text>
+      <!-- Cost -->
+      <rect x="610" y="292" width="230" height="38" rx="8" fill="#2a6b4f" opacity="0.08" stroke="#2a6b4f" stroke-width="1.5"/>
+      <text x="725" y="309" text-anchor="middle" font-size="11" fill="#2a6b4f" font-style="italic">Total running cost</text>
+      <text x="725" y="325" text-anchor="middle" font-family="Courier New,monospace" font-size="13" fill="#2a6b4f" font-weight="bold">&euro;0 / month*</text>
+    </svg>
+  </div>
 
-        <!-- Plain HTML box -->
-        <rect x="200" y="196" width="150" height="72" rx="10" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
-        <text x="275" y="224" text-anchor="middle" font-size="13" fill="#2a6b4f" font-style="italic">HTML &amp; CSS</text>
-        <text x="275" y="241" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">no frameworks</text>
-        <text x="275" y="256" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">no build tools</text>
+  <!-- Cards -->
+  <p class="section-title">The pieces, explained</p>
+  <div class="cards">
 
-        <!-- SVG illustrations box -->
-        <rect x="370" y="196" width="150" height="72" rx="10" fill="white" stroke="#b8ddd0" stroke-width="1.5"/>
-        <text x="445" y="224" text-anchor="middle" font-size="13" fill="#2a6b4f" font-style="italic">Inline SVG</text>
-        <text x="445" y="241" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">all illustrations</text>
-        <text x="445" y="256" text-anchor="middle" font-family="Courier New,monospace" font-size="9.5" fill="#888">generated by AI</text>
-
-        <!-- Cost box -->
-        <rect x="540" y="196" width="245" height="72" rx="10" fill="#2a6b4f" opacity="0.08" stroke="#2a6b4f" stroke-width="1.5"/>
-        <text x="662" y="222" text-anchor="middle" font-size="12" fill="#2a6b4f" font-style="italic">Total cost to run</text>
-        <text x="662" y="243" text-anchor="middle" font-family="Courier New,monospace" font-size="22" fill="#2a6b4f" font-weight="bold">€0 / month</text>
-        <text x="662" y="260" text-anchor="middle" font-family="Courier New,monospace" font-size="9" fill="#888">domain renewal aside</text>
-      </svg>
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
+          <circle cx="18" cy="18" r="9" fill="none" stroke="#2a6b4f" stroke-width="2"/>
+          <line x1="18" y1="9" x2="18" y2="27" stroke="#2a6b4f" stroke-width="1.5"/>
+          <line x1="10" y1="13" x2="26" y2="13" stroke="#2a6b4f" stroke-width="1"/>
+          <line x1="10" y1="23" x2="26" y2="23" stroke="#2a6b4f" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="card-name">Louhi</div>
+      <div class="card-role">Domain registrar</div>
+      <div class="card-desc">Manages the seppanen.eu domain name and its DNS records. A Finnish hosting company.</div>
     </div>
 
-    <!-- Cards -->
-    <p class="section-title">The pieces, explained</p>
-    <div class="cards">
-
-      <div class="card">
-        <div class="card-icon">
-          <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-            <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
-            <circle cx="18" cy="18" r="9" fill="none" stroke="#2a6b4f" stroke-width="2"/>
-            <line x1="18" y1="9" x2="18" y2="27" stroke="#2a6b4f" stroke-width="1.5"/>
-            <line x1="10" y1="13" x2="26" y2="13" stroke="#2a6b4f" stroke-width="1"/>
-            <line x1="10" y1="23" x2="26" y2="23" stroke="#2a6b4f" stroke-width="1"/>
-          </svg>
-        </div>
-        <div class="card-name">Louhi</div>
-        <div class="card-role">Domain registrar</div>
-        <div class="card-desc">Manages the seppanen.eu domain name and its DNS records. A Finnish hosting company.</div>
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
+          <rect x="8" y="12" width="20" height="14" rx="3" fill="none" stroke="#2a6b4f" stroke-width="2"/>
+          <polyline points="8,17 18,23 28,17" fill="none" stroke="#2a6b4f" stroke-width="1.5"/>
+        </svg>
       </div>
+      <div class="card-name">ImprovMX</div>
+      <div class="card-role">Email forwarding</div>
+      <div class="card-desc">Forwards mail sent to pasi@seppanen.eu to a real inbox. Free tier, zero maintenance.</div>
+    </div>
 
-      <div class="card">
-        <div class="card-icon">
-          <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-            <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
-            <rect x="8" y="12" width="20" height="14" rx="3" fill="none" stroke="#2a6b4f" stroke-width="2"/>
-            <polyline points="8,17 18,23 28,17" fill="none" stroke="#2a6b4f" stroke-width="1.5"/>
-          </svg>
-        </div>
-        <div class="card-name">ImprovMX</div>
-        <div class="card-role">Email forwarding</div>
-        <div class="card-desc">Forwards mail sent to pasi@seppanen.eu to a real inbox. Free tier, zero maintenance.</div>
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
+          <circle cx="18" cy="14" r="5" fill="none" stroke="#2a6b4f" stroke-width="2"/>
+          <line x1="18" y1="19" x2="18" y2="28" stroke="#2a6b4f" stroke-width="2"/>
+          <line x1="12" y1="24" x2="24" y2="24" stroke="#2a6b4f" stroke-width="1.5"/>
+          <line x1="10" y1="28" x2="26" y2="28" stroke="#2a6b4f" stroke-width="1.5"/>
+        </svg>
       </div>
+      <div class="card-name">GitHub</div>
+      <div class="card-role">Code + hosting</div>
+      <div class="card-desc">All the HTML lives in a public repository. GitHub Pages serves it directly to seppanen.eu &mdash; for free.</div>
+    </div>
 
-      <div class="card">
-        <div class="card-icon">
-          <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-            <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
-            <circle cx="18" cy="14" r="5" fill="none" stroke="#2a6b4f" stroke-width="2"/>
-            <line x1="18" y1="19" x2="18" y2="28" stroke="#2a6b4f" stroke-width="2"/>
-            <line x1="12" y1="24" x2="24" y2="24" stroke="#2a6b4f" stroke-width="1.5"/>
-            <line x1="10" y1="28" x2="26" y2="28" stroke="#2a6b4f" stroke-width="1.5"/>
-          </svg>
-        </div>
-        <div class="card-name">GitHub</div>
-        <div class="card-role">Code + hosting</div>
-        <div class="card-desc">All the HTML lives in a public repository. GitHub Pages serves it directly to seppanen.eu — for free.</div>
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
+          <!-- thumbs up shape -->
+          <path d="M10 20 Q10 28 18 28 L26 28 Q28 28 28 26 L28 20 Q28 18 26 18 L20 18 L22 12 Q22 8 18 8 L16 8 L14 16 L10 16 Z" fill="none" stroke="#2a6b4f" stroke-width="1.8" stroke-linejoin="round"/>
+          <rect x="8" y="18" width="4" height="10" rx="2" fill="#2a6b4f" opacity="0.5"/>
+        </svg>
       </div>
+      <div class="card-name">Formspree</div>
+      <div class="card-role">Visitor reactions</div>
+      <div class="card-desc">Handles the thumbs-up form at the bottom of each page. Submissions arrive as email notifications &mdash; no database needed.</div>
+    </div>
 
-      <div class="card">
-        <div class="card-icon">
-          <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-            <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
-            <rect x="7" y="10" width="10" height="7" rx="2" fill="#2a6b4f" opacity="0.7"/>
-            <rect x="19" y="10" width="10" height="7" rx="2" fill="none" stroke="#2a6b4f" stroke-width="1.5"/>
-            <rect x="7" y="20" width="10" height="7" rx="2" fill="none" stroke="#2a6b4f" stroke-width="1.5"/>
-            <rect x="19" y="20" width="10" height="7" rx="2" fill="#2a6b4f" opacity="0.3"/>
-          </svg>
-        </div>
-        <div class="card-name">Claude</div>
-        <div class="card-role">AI builder</div>
-        <div class="card-desc">Wrote all the HTML, CSS, and SVG illustrations based on plain-English prompts. Made by Anthropic.</div>
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
+          <rect x="7" y="10" width="10" height="7" rx="2" fill="#2a6b4f" opacity="0.7"/>
+          <rect x="19" y="10" width="10" height="7" rx="2" fill="none" stroke="#2a6b4f" stroke-width="1.5"/>
+          <rect x="7" y="20" width="10" height="7" rx="2" fill="none" stroke="#2a6b4f" stroke-width="1.5"/>
+          <rect x="19" y="20" width="10" height="7" rx="2" fill="#2a6b4f" opacity="0.3"/>
+        </svg>
       </div>
+      <div class="card-name">Claude</div>
+      <div class="card-role">AI builder</div>
+      <div class="card-desc">Wrote all the HTML, CSS, and SVG illustrations based on plain-English prompts. Made by Anthropic.</div>
+    </div>
 
-      <div class="card">
-        <div class="card-icon">
-          <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-            <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
-            <text x="8" y="22" font-family="Courier New,monospace" font-size="11" fill="#2a6b4f" font-weight="bold">&lt;/&gt;</text>
-          </svg>
-        </div>
-        <div class="card-name">HTML &amp; CSS</div>
-        <div class="card-role">The site itself</div>
-        <div class="card-desc">Plain HTML files and embedded CSS. No frameworks, no JavaScript libraries, no build pipeline.</div>
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
+          <text x="8" y="22" font-family="Courier New,monospace" font-size="11" fill="#2a6b4f" font-weight="bold">&lt;/&gt;</text>
+        </svg>
       </div>
+      <div class="card-name">HTML &amp; CSS</div>
+      <div class="card-role">The site itself</div>
+      <div class="card-desc">Plain HTML files and embedded CSS. No frameworks, no JavaScript libraries, no build pipeline.</div>
+    </div>
 
-      <div class="card">
-        <div class="card-icon">
-          <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-            <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
-            <circle cx="18" cy="18" r="8" fill="none" stroke="#2a6b4f" stroke-width="1.5"/>
-            <polygon points="14,15 14,21 22,18" fill="#2a6b4f" opacity="0.6"/>
-          </svg>
-        </div>
-        <div class="card-name">GitHub Actions</div>
-        <div class="card-role">Auto-deployment</div>
-        <div class="card-desc">Every time the code changes, a workflow runs automatically and pushes the update live within seconds.</div>
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="#e8f5f0"/>
+          <circle cx="18" cy="18" r="8" fill="none" stroke="#2a6b4f" stroke-width="1.5"/>
+          <polygon points="14,15 14,21 22,18" fill="#2a6b4f" opacity="0.6"/>
+        </svg>
       </div>
-
+      <div class="card-name">GitHub Actions</div>
+      <div class="card-role">Auto-deployment</div>
+      <div class="card-desc">Every time the code changes, a workflow runs automatically and pushes the update live within seconds.</div>
     </div>
 
   </div>
 
-  <footer>
-    <p>&copy; 2026 Pasi Seppanen &nbsp;·&nbsp; seppanen.eu</p>
-    <a href="mailto:pasi@seppanen.eu">pasi@seppanen.eu</a>
-  </footer>
+  <p style="font-family:'Courier New',monospace; font-size:0.75rem; color:var(--muted); margin-top:2rem;">* Domain renewal is the only annual cost (&sim;&euro;10/yr). Everything else is free.</p>
+
+</div>
+
+<footer>
+  <p>&copy; 2026 Pasi Seppanen &nbsp;&middot;&nbsp; seppanen.eu</p>
+  <a href="mailto:pasi@seppanen.eu">pasi@seppanen.eu</a>
+</footer>
 
 </body>
 </html>
