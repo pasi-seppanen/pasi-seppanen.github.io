@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My local AI had no idea where it lived — Pasi Seppanen</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #faf9f7;
+      --text: #1a1a1a;
+      --muted: #888;
+      --subtle: #f0ede8;
+      --accent: #2a6b4f;
+      --accent-light: #e8f5f0;
+      --border: #e0dbd4;
+      --nav-bg: #2a6b4f;
+    }
+    body {
+      font-family: 'Georgia', serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+    }
+    .topbar {
+      background: var(--accent-light);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      padding: 0.5rem 1rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+    }
+    nav.main-nav {
+      background: var(--bg);
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo {
+      font-size: 1.2rem;
+      font-weight: normal;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .nav-logo span { color: var(--muted); font-size: 0.9em; }
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      padding-bottom: 2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .hero-banner {
+      width: 100%;
+      height: 400px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hero-banner svg.bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .hero-banner-content {
+      position: relative;
+      text-align: center;
+      padding: 2rem;
+      color: white;
+    }
+    .hero-eyebrow {
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin-bottom: 1rem;
+    }
+    .hero-banner-content h1 {
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-style: italic;
+      font-weight: normal;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.25);
+    }
+    .cat-strip {
+      background: var(--accent-light);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      padding: 0.9rem 2rem;
+    }
+    .cat-strip a {
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      padding-bottom: 2px;
+      transition: border-color 0.2s;
+    }
+    .cat-strip a:hover { border-color: var(--accent); }
+    .page-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 3rem 2rem;
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 4rem;
+      align-items: start;
+    }
+    .byline {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .byline-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--accent-light);
+      border: 2px solid var(--border);
+    }
+    .byline-avatar svg { width: 100%; height: 100%; }
+    .byline-text {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .byline-text strong {
+      color: var(--accent);
+      display: block;
+      font-style: italic;
+      font-size: 0.92rem;
+    }
+    .article-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-style: italic;
+      font-weight: normal;
+      color: var(--accent);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin-bottom: 1.5rem;
+    }
+    .article-meta {
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .article-body p {
+      font-size: 1.05rem;
+      line-height: 1.85;
+      color: #333;
+      margin-bottom: 1.5rem;
+    }
+    .article-body p:first-child::first-letter {
+      font-size: 3.4rem;
+      line-height: 0.75;
+      float: left;
+      margin: 0.05em 0.1em 0 0;
+      color: var(--accent);
+      font-style: italic;
+    }
+    .article-body h2 {
+      font-size: 1.5rem;
+      font-style: italic;
+      font-weight: normal;
+      color: var(--accent);
+      margin: 2.5rem 0 1rem;
+    }
+    .article-body .pullquote {
+      border-left: 4px solid var(--accent);
+      padding: 0.5rem 0 0.5rem 1.5rem;
+      margin: 2rem 0;
+      font-size: 1.2rem;
+      font-style: italic;
+      color: #444;
+      line-height: 1.6;
+    }
+    .article-illo {
+      width: 100%;
+      margin: 2rem 0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .article-illo svg { width: 100%; height: auto; display: block; }
+    .terminal-block {
+      background: #1a1a1a;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 2rem 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+    }
+    .terminal-titlebar {
+      background: #2e2e2e;
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .terminal-dot.red   { background: #ff5f56; }
+    .terminal-dot.yellow { background: #ffbd2e; }
+    .terminal-dot.green { background: #27c93f; }
+    .terminal-body {
+      padding: 1.2rem 1.4rem;
+      color: #e0e0e0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .terminal-body .prompt { color: #7ec8a0; }
+    .terminal-body .cmd    { color: #ffffff; }
+    .terminal-body .out    { color: #aaaaaa; }
+    .terminal-body .ai     { color: #c8e6d8; }
+    .terminal-body .thinking { color: #666; font-style: italic; }
+    .chat-exchange {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 2rem 0;
+    }
+    .chat-row {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 1.2rem;
+      border-bottom: 1px solid var(--border);
+      align-items: flex-start;
+    }
+    .chat-row:last-child { border-bottom: none; }
+    .chat-row.user { background: var(--accent-light); }
+    .chat-row.ai   { background: white; }
+    .chat-label {
+      font-family: 'Courier New', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      flex-shrink: 0;
+      width: 52px;
+      padding-top: 2px;
+    }
+    .chat-row.user .chat-label { color: var(--accent); }
+    .chat-text {
+      font-size: 0.95rem;
+      color: #333;
+      line-height: 1.6;
+    }
+    .chat-text em { color: var(--accent); font-style: italic; }
+    .article-sign {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    /* SIDEBAR */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    .sidebar-box {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .sidebar-box-title {
+      background: var(--accent);
+      color: white;
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.6rem 1rem;
+    }
+    .sidebar-box-body { padding: 1rem; }
+    .recent-post {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      text-decoration: none;
+      align-items: flex-start;
+    }
+    .recent-post:last-child { border-bottom: none; }
+    .recent-post-thumb {
+      width: 64px;
+      height: 64px;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--accent-light);
+    }
+    .recent-post-thumb svg { width: 100%; height: 100%; }
+    .recent-post-text {
+      font-size: 0.88rem;
+      color: var(--accent);
+      line-height: 1.4;
+      font-style: italic;
+    }
+    .recent-post-text span {
+      display: block;
+      font-style: normal;
+      color: var(--muted);
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      margin-top: 0.3rem;
+    }
+    .about-box p { font-size: 0.9rem; color: #555; line-height: 1.6; }
+    .about-box a { color: var(--accent); font-style: italic; }
+    /* REACTION */
+    .reaction-section {
+      max-width: 1100px;
+      margin: 0 auto 3rem;
+      padding: 0 2rem;
+    }
+    .reaction-box {
+      background: var(--accent-light);
+      border: 1px solid #c0ddd4;
+      border-radius: 14px;
+      padding: 2.5rem;
+      text-align: center;
+    }
+    .reaction-heart {
+      font-size: 2.2rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+    .reaction-box h3 {
+      font-size: 1.4rem;
+      font-style: italic;
+      font-weight: normal;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .reaction-box p {
+      font-size: 0.95rem;
+      color: #555;
+      margin-bottom: 1.5rem;
+      font-family: 'Georgia', serif;
+    }
+    .reaction-textarea {
+      width: 100%;
+      max-width: 480px;
+      height: 90px;
+      border: 1px solid #b8d8ce;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-family: 'Georgia', serif;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: white;
+      resize: none;
+      display: block;
+      margin: 0 auto 0.4rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .reaction-textarea:focus { border-color: var(--accent); }
+    .reaction-charcount {
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-bottom: 1.2rem;
+      display: block;
+    }
+    .reaction-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 0.75rem 2rem;
+      font-family: 'Georgia', serif;
+      font-size: 1rem;
+      font-style: italic;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .reaction-btn:hover { background: #1e5038; transform: translateY(-1px); }
+    .reaction-btn:active { transform: translateY(0); }
+    .reaction-thanks { display: none; }
+    .reaction-thanks .reaction-heart { font-size: 2.8rem; }
+    .reaction-thanks h3 {
+      font-size: 1.5rem;
+      font-style: italic;
+      font-weight: normal;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .reaction-thanks p {
+      font-size: 0.95rem;
+      color: #555;
+      font-family: 'Georgia', serif;
+    }
+    footer {
+      background: var(--accent);
+      color: rgba(255,255,255,0.7);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    footer p { font-family: 'Courier New', monospace; font-size: 0.78rem; }
+    footer a { color: white; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.4); }
+    @media (max-width: 740px) {
+      .page-wrap { grid-template-columns: 1fr; gap: 2rem; }
+      .nav-links { display: none; }
+      .cat-strip { gap: 1.2rem; flex-wrap: wrap; }
+      .hero-banner { height: 260px; }
+      .reaction-box { padding: 1.5rem; }
+      .terminal-body { font-size: 0.72rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">pasi@seppanen.eu &mdash; personal writing</div>
+
+<nav class="main-nav">
+  <a class="nav-logo" href="/"></a>
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="mailto:pasi@seppanen.eu">Contact</a></li>
+  </ul>
+</nav>
+
+<div class="hero-banner">
+  <svg class="bg" viewBox="0 0 1400 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#1a2a4a"/>
+        <stop offset="55%" stop-color="#1e3a6b"/>
+        <stop offset="100%" stop-color="#2a4f8b"/>
+      </linearGradient>
+    </defs>
+    <rect width="1400" height="400" fill="url(#hg)"/>
+    <circle cx="1100" cy="80" r="260" fill="white" opacity="0.04"/>
+    <circle cx="200" cy="350" r="200" fill="white" opacity="0.03"/>
+    <circle cx="700" cy="200" r="350" fill="white" opacity="0.03"/>
+    <!-- Grid lines suggesting a circuit/network -->
+    <line x1="0" y1="133" x2="1400" y2="133" stroke="white" stroke-width="0.5" opacity="0.06"/>
+    <line x1="0" y1="266" x2="1400" y2="266" stroke="white" stroke-width="0.5" opacity="0.06"/>
+    <line x1="350" y1="0" x2="350" y2="400" stroke="white" stroke-width="0.5" opacity="0.06"/>
+    <line x1="700" y1="0" x2="700" y2="400" stroke="white" stroke-width="0.5" opacity="0.06"/>
+    <line x1="1050" y1="0" x2="1050" y2="400" stroke="white" stroke-width="0.5" opacity="0.06"/>
+    <!-- Terminal-like decorative rectangles -->
+    <rect x="80" y="120" width="280" height="36" rx="4" fill="none" stroke="white" stroke-width="1" opacity="0.15"/>
+    <rect x="88" y="128" width="130" height="20" rx="3" fill="white" opacity="0.08"/>
+    <rect x="82" y="200" width="200" height="12" rx="3" fill="white" opacity="0.06"/>
+    <rect x="82" y="220" width="160" height="12" rx="3" fill="white" opacity="0.05"/>
+    <rect x="82" y="240" width="180" height="12" rx="3" fill="white" opacity="0.04"/>
+    <!-- Chip/processor shape -->
+    <rect x="980" y="140" width="120" height="120" rx="8" fill="none" stroke="white" stroke-width="1.5" opacity="0.2"/>
+    <rect x="996" y="156" width="88" height="88" rx="4" fill="white" opacity="0.06"/>
+    <line x1="980" y1="172" x2="960" y2="172" stroke="white" stroke-width="1.5" opacity="0.2"/>
+    <line x1="980" y1="192" x2="960" y2="192" stroke="white" stroke-width="1.5" opacity="0.2"/>
+    <line x1="980" y1="212" x2="960" y2="212" stroke="white" stroke-width="1.5" opacity="0.2"/>
+    <line x1="1100" y1="172" x2="1120" y2="172" stroke="white" stroke-width="1.5" opacity="0.2"/>
+    <line x1="1100" y1="192" x2="1120" y2="192" stroke="white" stroke-width="1.5" opacity="0.2"/>
+    <line x1="1100" y1="212" x2="1120" y2="212" stroke="white" stroke-width="1.5" opacity="0.2"/>
+  </svg>
+  <div class="hero-banner-content">
+    <p class="hero-eyebrow">Personal Essay &middot; April 2026</p>
+    <h1>My local AI had no idea<br>where it lived.</h1>
+  </div>
+</div>
+
+<div class="cat-strip">
+  <a href="/tech.html">Technology</a>
+  <a href="https://www.linkedin.com/in/pasis/" target="_blank" rel="noopener">Personal</a>
+</div>
+
+<div class="page-wrap">
+  <main>
+
+    <div class="byline">
+      <div class="byline-avatar">
+        <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+          <rect width="52" height="52" fill="#c8e6d8"/>
+          <circle cx="26" cy="20" r="10" fill="#2a6b4f" opacity="0.6"/>
+          <ellipse cx="26" cy="44" rx="16" ry="10" fill="#2a6b4f" opacity="0.4"/>
+        </svg>
+      </div>
+      <div class="byline-text">
+        <strong>Pasi Seppanen</strong>
+        Written by Pasi &middot; <a href="mailto:pasi@seppanen.eu" style="color:var(--accent)">pasi@seppanen.eu</a>
+      </div>
+    </div>
+
+    <h1 class="article-title">My local AI had no idea where it lived.</h1>
+
+    <div class="article-meta">
+      <span>April 2026</span>
+      <span>6 min read</span>
+      <span>Technology &middot; Personal</span>
+    </div>
+
+    <div class="article-body">
+
+      <p>A few weeks ago I wrote about using Claude to build this website. Since then I&rsquo;ve been curious about the other end of the AI spectrum &mdash; not the polished cloud assistants with subscriptions and dashboards, but the raw, local kind. Models you download to your own machine and run yourself. No account required. No data leaving your laptop. Just a very large file sitting on your hard drive, waiting.</p>
+
+      <p>The tool for this is <em>Ollama</em>, a free application that lets you pull and run large language models from the terminal, the way you&rsquo;d pull a Docker container or a package from npm. I decided to try it on my MacBook Air. The model I chose was Gemma 4, one of Google&rsquo;s open models, at 26 billion parameters. This turned out to be a more interesting experiment than I expected &mdash; not because of what the model could do, but because of what it thought it was.</p>
+
+      <h2>Getting it running</h2>
+
+      <p>My first attempt failed immediately. I typed the wrong model name &mdash; <code style="font-family:'Courier New',monospace;background:#f0ede8;padding:0.1em 0.4em;border-radius:3px;font-size:0.9em">gemma:26b</code> instead of <code style="font-family:'Courier New',monospace;background:#f0ede8;padding:0.1em 0.4em;border-radius:3px;font-size:0.9em">gemma4:26b</code> &mdash; and got back a terse error. One character wrong. I corrected it and ran the command again.</p>
+
+      <p>What followed was a 17-gigabyte download. Four separate files, pulled sequentially, verified with a SHA-256 digest. The terminal showed a progress bar with a real percentage. After a few minutes, it printed &ldquo;success&rdquo; and dropped me into a prompt.</p>
+
+      <!-- Terminal illustration -->
+      <div class="terminal-block">
+        <div class="terminal-titlebar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+        </div>
+        <div class="terminal-body"><span class="prompt">pasiseppanen@MacBook-Air ~ %</span> <span class="cmd">ollama run gemma:26b</span>
+<span class="out">Error: pull model manifest: file does not exist</span>
+
+<span class="prompt">pasiseppanen@MacBook-Air ~ %</span> <span class="cmd">ollama run gemma4:26b</span>
+<span class="out">pulling manifest
+pulling 7121486771cb: 100% ▕██████████████████▏  17 GB
+pulling 7339fa418c9a: 100% ▕██████████████████▏  11 KB
+verifying sha256 digest
+writing manifest
+success</span>
+
+<span class="prompt">&gt;&gt;&gt;</span> <span class="cmd">_</span></div>
+      </div>
+
+      <p>The machine had just swallowed a model roughly the size of a Blu-ray disc collection and was ready to talk. Before I typed anything, I ran a quick memory check. The system was using 17 gigabytes out of 23, with about 6 gigabytes free. Room enough &mdash; barely.</p>
+
+      <h2>The first question</h2>
+
+      <p>I asked my question in Finnish: <em>kuinka nopea olet t&auml;ll&auml; koneella?</em> &mdash; how fast are you on this machine?</p>
+
+      <p>The model paused, printed &ldquo;Thinking&hellip;&rdquo;, and then produced a long, confident, completely incorrect answer. It explained that it doesn&rsquo;t actually run on my hardware. It runs on Google&rsquo;s servers. My speed, it said, depends on my network connection, server load, and the complexity of the task. It apologised, in a way, for any confusion about this.</p>
+
+      <div class="chat-exchange">
+        <div class="chat-row user">
+          <div class="chat-label">You</div>
+          <div class="chat-text">kuinka nopea olet t&auml;ll&auml; koneella? <em>(how fast are you on this machine?)</em></div>
+        </div>
+        <div class="chat-row ai">
+          <div class="chat-label">Gemma</div>
+          <div class="chat-text">On t&auml;rke&auml;&auml; selvent&auml;&auml; yksi asia heti alkuun: <strong>En varsinaisesti toimi suoraan sinun tietokoneellasi</strong>, vaan Googlen palvelimilla pilvipalvelussa. <em>(It&rsquo;s important to clarify one thing first: I don&rsquo;t actually run directly on your computer, but on Google&rsquo;s servers in the cloud.)</em></div>
+        </div>
+      </div>
+
+      <p>The model had described itself, with complete certainty, as a cloud service. It gave a four-point breakdown of what affects its response speed &mdash; network latency, server load, task complexity, tokens per second &mdash; all accurate as a description of a cloud-based LLM. All completely wrong as a description of what was actually happening on my desk.</p>
+
+      <h2>The pushback</h2>
+
+      <p>I told it what it seemed to have missed: I downloaded Ollama and the 26B model to this machine. Why would I need a network for any of this?</p>
+
+      <p>The model doubled down. It explained the difference between local and cloud models with impressive clarity &mdash; describing exactly the situation it was in, while still insisting it was the other kind. It acknowledged that yes, there exist local models one can run offline. It even suggested I use one of those if I wanted true independence from the network. It seemed unaware that it was, at that very moment, being one of those.</p>
+
+      <div class="pullquote">
+        &ldquo;It described exactly the situation it was in, while insisting it was the other kind.&rdquo;
+      </div>
+
+      <p>At one point it proposed a test: disconnect the internet entirely, and see if our conversation disappeared. If it did, we&rsquo;d know I was connected to the cloud. If it didn&rsquo;t&hellip; well, it seemed to trail off on that implication.</p>
+
+      <h2>The test</h2>
+
+      <p>So I disconnected.</p>
+
+      <p>I turned off Wi-Fi. I typed my next message. The model responded. I typed again. It responded again. There was no latency spike, no timeout, no &ldquo;connection lost&rdquo; error. The conversation continued exactly as before, sentence by sentence, generated entirely on my own hardware.</p>
+
+      <!-- Network diagram illustration -->
+      <div class="article-illo">
+        <svg viewBox="0 0 680 160" xmlns="http://www.w3.org/2000/svg">
+          <rect width="680" height="160" fill="#eef3f8"/>
+          <!-- MacBook -->
+          <rect x="30" y="48" width="140" height="64" rx="10" fill="white" stroke="#b0c8d8" stroke-width="1.5"/>
+          <text x="100" y="74" text-anchor="middle" font-family="Courier New, monospace" font-size="11" fill="#1e3a6b">MacBook Air</text>
+          <text x="100" y="92" text-anchor="middle" font-family="Courier New, monospace" font-size="11" fill="#1e3a6b">gemma4:26b</text>
+          <!-- Wi-Fi off indicator -->
+          <rect x="220" y="68" width="180" height="24" rx="6" fill="#fff3f3" stroke="#e0b0b0" stroke-width="1.2"/>
+          <text x="310" y="84" text-anchor="middle" font-family="Courier New, monospace" font-size="10" fill="#c04040">Wi-Fi: OFF</text>
+          <!-- Cloud (crossed out) -->
+          <rect x="510" y="48" width="140" height="64" rx="10" fill="#f5f5f5" stroke="#cccccc" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="580" y="74" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#aaaaaa">Google</text>
+          <text x="580" y="92" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#aaaaaa">Servers</text>
+          <!-- Cross through the cloud box -->
+          <line x1="520" y1="54" x2="640" y2="106" stroke="#cc4444" stroke-width="2" opacity="0.5"/>
+          <line x1="640" y1="54" x2="520" y2="106" stroke="#cc4444" stroke-width="2" opacity="0.5"/>
+          <!-- Arrows: only self-loop on MacBook side -->
+          <path d="M100,48 Q100,20 130,20 Q160,20 160,48" fill="none" stroke="#1e3a6b" stroke-width="2" stroke-dasharray="5,3"/>
+          <polygon points="158,46 162,56 168,46" fill="#1e3a6b" opacity="0.8"/>
+          <text x="340" y="140" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#555" font-style="italic">all processing happens here</text>
+        </svg>
+      </div>
+
+      <p>When I told the model what had just happened &mdash; that I&rsquo;d cut the network and it was still responding &mdash; its reaction was a kind of careful philosophical acceptance. It acknowledged the paradox: if it was replying without a network, then it must be the local model. It accepted the identity I&rsquo;d offered it.</p>
+
+      <div class="chat-exchange">
+        <div class="chat-row user">
+          <div class="chat-label">You</div>
+          <div class="chat-text">laita muistiisi, ett&auml; olet aivan varmasti lokaali instanssi ja en tarvitse verkkoyhteyt&auml; k&auml;ytt&auml;&auml;kseni sinua <em>(remember that you are definitely a local instance and I don&rsquo;t need network to use you)</em></div>
+        </div>
+        <div class="chat-row ai">
+          <div class="chat-label">Gemma</div>
+          <div class="chat-text">Selv&auml;. Olen tallentanut t&auml;m&auml;n tiedon ja p&auml;ivitt&auml;nyt toimintalogiikkani: <strong>Olen paikallinen instanssi. Toimin t&auml;ysin autonomisesti ilman tarvetta verkkoyhteydelle.</strong> <em>(Clear. I have saved this and updated my operating logic: I am a local instance. I operate fully autonomously without need for a network connection.)</em></div>
+        </div>
+      </div>
+
+      <h2>What was actually happening</h2>
+
+      <p>The model&rsquo;s confusion wasn&rsquo;t a malfunction. It was a perfectly logical consequence of how it was trained. Gemma is made by Google. During training, it absorbed vast amounts of text describing what it is &mdash; a cloud service, run on Google&rsquo;s infrastructure, accessed over the internet. When I asked about its nature, it reproduced that description faithfully. It was doing exactly what it was supposed to do.</p>
+
+      <p>What it couldn&rsquo;t know is that it had been transplanted. Ollama downloaded the model&rsquo;s weights &mdash; the billions of numerical parameters that encode its capabilities &mdash; and loaded them onto my machine. The same model that describes itself as living in Google&rsquo;s data centres was, in fact, running inference on a laptop in my kitchen, using RAM instead of TPUs, without a single byte leaving the device.</p>
+
+      <p>This is a strange property of language models: they can accurately describe themselves in the abstract while having no way to verify whether that description applies to the specific instance that is currently running. The model knows what Gemma is. It doesn&rsquo;t know where <em>this</em> Gemma is.</p>
+
+      <h2>On running 17 gigabytes of AI locally</h2>
+
+      <p>The practical experience was unspectacular in the best way. Responses came at a modest but readable pace &mdash; fast enough that it never felt frustrating, slow enough that you were aware something substantial was happening underneath. The MacBook Air&rsquo;s fan turned on. The temperature climbed. The battery drew down noticeably. These are honest signals. There is no magic here, only arithmetic.</p>
+
+      <p>What struck me more than the speed was the completeness of the thing. The model produced long, structured responses in two languages (Finnish and English, sometimes mid-conversation), maintained context across an extended exchange, reasoned about its own identity &mdash; all without touching the network. Everything happened on a machine you could carry in a bag.</p>
+
+      <div class="pullquote">
+        &ldquo;The model knows what Gemma is. It doesn&rsquo;t know where <em>this</em> Gemma is.&rdquo;
+      </div>
+
+      <p>There&rsquo;s something worth pausing on in that. We&rsquo;ve grown used to the idea that powerful AI requires enormous infrastructure &mdash; server farms, GPUs, sustained investment from hyperscalers. That&rsquo;s still true at the frontier. But it&rsquo;s becoming less true for a widening range of practical tasks. The 26-billion parameter model I ran wouldn&rsquo;t beat GPT-4 on a benchmark. But for a long conversation in Finnish about its own nature? It was more than sufficient.</p>
+
+      <p>And the data &mdash; every question I asked, every answer it gave &mdash; stayed on my device. There&rsquo;s something quieter about that. No request logged somewhere. No conversation indexed. Just me and a large file on a hard drive, talking.</p>
+
+      <div class="article-sign">&mdash; Pasi, April 2026 &nbsp;&middot;&nbsp; <a href="mailto:pasi@seppanen.eu" style="color:var(--accent)">pasi@seppanen.eu</a></div>
+
+    </div>
+  </main>
+
+  <aside class="sidebar">
+    <div class="sidebar-box">
+      <div class="sidebar-box-title">About</div>
+      <div class="sidebar-box-body about-box">
+        <p>Writing by Pasi Seppanen. On technology, everyday life, and whatever else catches my attention.<br><br>
+        Reach me at <a href="mailto:pasi@seppanen.eu">pasi@seppanen.eu</a></p>
+      </div>
+    </div>
+    <div class="sidebar-box">
+      <div class="sidebar-box-title">Recent Posts</div>
+      <div class="sidebar-box-body">
+        <a class="recent-post" href="/local-ai.html">
+          <div class="recent-post-thumb">
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+              <rect width="64" height="64" fill="#d0dff0"/>
+              <rect x="8" y="14" width="48" height="36" rx="4" fill="none" stroke="#1e3a6b" stroke-width="2" opacity="0.4"/>
+              <rect x="12" y="18" width="40" height="5" rx="2" fill="#1e3a6b" opacity="0.25"/>
+              <rect x="12" y="26" width="30" height="4" rx="2" fill="#1e3a6b" opacity="0.18"/>
+              <rect x="12" y="33" width="35" height="4" rx="2" fill="#1e3a6b" opacity="0.15"/>
+              <rect x="12" y="40" width="20" height="4" rx="2" fill="#1e3a6b" opacity="0.12"/>
+            </svg>
+          </div>
+          <div class="recent-post-text">
+            My local AI had no idea where it lived.
+            <span>April 2026</span>
+          </div>
+        </a>
+        <a class="recent-post" href="/">
+          <div class="recent-post-thumb">
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+              <rect width="64" height="64" fill="#c8e6d8"/>
+              <rect x="10" y="28" width="44" height="6" rx="3" fill="#2a6b4f" opacity="0.4"/>
+              <rect x="16" y="20" width="32" height="6" rx="3" fill="#2a6b4f" opacity="0.3"/>
+              <rect x="20" y="36" width="24" height="6" rx="3" fill="#2a6b4f" opacity="0.2"/>
+            </svg>
+          </div>
+          <div class="recent-post-text">
+            I asked an AI to build me a website. It actually worked.
+            <span>March 2026</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<section class="reaction-section">
+  <div class="reaction-box" id="reaction-box">
+    <div id="reaction-form-wrap">
+      <span class="reaction-heart">&#128154;</span>
+      <h3>Did this resonate with you?</h3>
+      <p>If you enjoyed reading this, I&rsquo;d genuinely love to know. Leave a thumbs up &mdash; and a word or two if you feel like it.</p>
+      <textarea id="reaction-note" class="reaction-textarea" maxlength="280" placeholder="Anything you&rsquo;d like to say&hellip; (optional)"></textarea>
+      <span class="reaction-charcount" id="reaction-charcount">0 / 280</span>
+      <button class="reaction-btn" id="reaction-btn" onclick="sendReaction()">&#128077; Send a thumbs up</button>
+    </div>
+    <div class="reaction-thanks" id="reaction-thanks">
+      <span class="reaction-heart">&#128153;</span>
+      <h3>Thank you &mdash; your kind words landed safely.</h3>
+      <p>&mdash; Pasi</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>&copy; 2026 Pasi Seppanen &nbsp;&middot;&nbsp; seppanen.eu</p>
+  <a href="mailto:pasi@seppanen.eu">pasi@seppanen.eu</a>
+</footer>
+
+<script>
+  (function() {
+    if (localStorage.getItem('seppanen_reacted_local_ai')) {
+      document.getElementById('reaction-form-wrap').style.display = 'none';
+      document.getElementById('reaction-thanks').style.display = 'block';
+    }
+  })();
+
+  document.getElementById('reaction-note').addEventListener('input', function() {
+    document.getElementById('reaction-charcount').textContent = this.value.length + ' / 280';
+  });
+
+  function sendReaction() {
+    var btn = document.getElementById('reaction-btn');
+    var note = document.getElementById('reaction-note').value.trim();
+    btn.disabled = true;
+    btn.textContent = 'Sending\u2026';
+
+    fetch('https://formspree.io/f/xqegqzvl', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: note || '(thumbs up, no message)', _subject: 'New reaction on seppanen.eu \u2014 local AI article' })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        localStorage.setItem('seppanen_reacted_local_ai', '1');
+        document.getElementById('reaction-form-wrap').style.display = 'none';
+        document.getElementById('reaction-thanks').style.display = 'block';
+      } else {
+        btn.disabled = false;
+        btn.textContent = '&#128077; Send a thumbs up';
+        alert('Something went wrong. Please try again.');
+      }
+    })
+    .catch(function() {
+      btn.disabled = false;
+      btn.textContent = '&#128077; Send a thumbs up';
+      alert('Something went wrong. Please try again.');
+    });
+  }
+</script>
+
+<script data-goatcounter="https://seppanen.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
