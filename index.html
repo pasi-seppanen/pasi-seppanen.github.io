@@ -73,25 +73,11 @@
     /* MASTHEAD */
     .masthead {
       border-bottom: 2px solid var(--border);
-      padding: 3rem 2rem 2.5rem;
-      text-align: center;
-      background: var(--bg);
+      width: 100%;
+      overflow: hidden;
+      line-height: 0;
     }
-    .masthead-name {
-      font-size: clamp(2.2rem, 6vw, 4rem);
-      font-weight: normal;
-      font-style: italic;
-      color: var(--accent);
-      letter-spacing: -0.02em;
-      margin-bottom: 0.5rem;
-    }
-    .masthead-tagline {
-      font-family: 'Courier New', monospace;
-      font-size: 0.78rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
+    .masthead svg { width: 100%; height: auto; display: block; }
     /* CAT STRIP */
     .cat-strip {
       background: var(--accent-light);
@@ -259,8 +245,39 @@
       padding: 0.6rem 1rem;
     }
     .sidebar-box-body { padding: 1rem; }
-    .about-box p { font-size: 0.9rem; color: #555; line-height: 1.6; }
-    .about-box a { color: var(--accent); font-style: italic; }
+    /* ABOUT CARD */
+    .about-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .about-card-banner { width: 100%; line-height: 0; }
+    .about-card-banner svg { width: 100%; display: block; }
+    .about-card-body {
+      padding: 1.2rem 1.25rem 1.4rem;
+    }
+    .about-card-body p {
+      font-size: 0.9rem;
+      color: #555;
+      line-height: 1.65;
+      margin-bottom: 1rem;
+    }
+    .about-card-contact {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-decoration: none;
+      border: 1px solid #c0ddd4;
+      border-radius: 6px;
+      padding: 0.45rem 0.75rem;
+      background: var(--accent-light);
+      transition: background 0.2s;
+    }
+    .about-card-contact:hover { background: #d5ede6; }
     footer {
       background: var(--accent);
       color: rgba(255,255,255,0.7);
@@ -294,8 +311,103 @@
 </nav>
 
 <div class="masthead">
-  <h1 class="masthead-name">Pasi Seppanen</h1>
-  <p class="masthead-tagline">Writing on technology &amp; everyday life</p>
+  <svg viewBox="0 0 1200 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <linearGradient id="mhg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#1a4a35"/>
+        <stop offset="50%" stop-color="#2a6b4f"/>
+        <stop offset="100%" stop-color="#1e5840"/>
+      </linearGradient>
+      <linearGradient id="shimmer" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="white" stop-opacity="0.07"/>
+        <stop offset="100%" stop-color="white" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+
+    <!-- Background -->
+    <rect width="1200" height="220" fill="url(#mhg)"/>
+    <rect width="1200" height="220" fill="url(#shimmer)"/>
+
+    <!-- Subtle grid -->
+    <line x1="0" y1="73" x2="1200" y2="73" stroke="white" stroke-width="0.5" opacity="0.05"/>
+    <line x1="0" y1="146" x2="1200" y2="146" stroke="white" stroke-width="0.5" opacity="0.05"/>
+    <line x1="300" y1="0" x2="300" y2="220" stroke="white" stroke-width="0.5" opacity="0.05"/>
+    <line x1="600" y1="0" x2="600" y2="220" stroke="white" stroke-width="0.5" opacity="0.05"/>
+    <line x1="900" y1="0" x2="900" y2="220" stroke="white" stroke-width="0.5" opacity="0.05"/>
+
+    <!-- Decorative: open book / pages shape, left -->
+    <g transform="translate(80, 38)" opacity="0.22">
+      <!-- left page -->
+      <path d="M70,0 Q35,5 0,20 L0,120 Q35,108 70,110 Z" fill="none" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- right page -->
+      <path d="M70,0 Q105,5 140,20 L140,120 Q105,108 70,110 Z" fill="none" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- spine -->
+      <line x1="70" y1="0" x2="70" y2="110" stroke="white" stroke-width="1.5"/>
+      <!-- text lines left page -->
+      <line x1="12" y1="38" x2="58" y2="34" stroke="white" stroke-width="1" opacity="0.6"/>
+      <line x1="12" y1="50" x2="58" y2="46" stroke="white" stroke-width="1" opacity="0.5"/>
+      <line x1="12" y1="62" x2="50" y2="58" stroke="white" stroke-width="1" opacity="0.4"/>
+      <line x1="12" y1="74" x2="58" y2="70" stroke="white" stroke-width="1" opacity="0.4"/>
+      <line x1="12" y1="86" x2="44" y2="83" stroke="white" stroke-width="1" opacity="0.3"/>
+      <!-- text lines right page -->
+      <line x1="82" y1="34" x2="128" y2="38" stroke="white" stroke-width="1" opacity="0.6"/>
+      <line x1="82" y1="46" x2="128" y2="50" stroke="white" stroke-width="1" opacity="0.5"/>
+      <line x1="82" y1="58" x2="120" y2="62" stroke="white" stroke-width="1" opacity="0.4"/>
+      <line x1="82" y1="70" x2="128" y2="74" stroke="white" stroke-width="1" opacity="0.4"/>
+      <line x1="82" y1="83" x2="110" y2="86" stroke="white" stroke-width="1" opacity="0.3"/>
+    </g>
+
+    <!-- Decorative: pen nib -->
+    <g transform="translate(290, 55)" opacity="0.18">
+      <path d="M0,90 L18,0 L36,90 L18,78 Z" fill="white"/>
+      <line x1="18" y1="78" x2="18" y2="110" stroke="white" stroke-width="3" stroke-linecap="round"/>
+      <line x1="18" y1="40" x2="18" y2="78" stroke="#1a4a35" stroke-width="1" opacity="0.5"/>
+    </g>
+
+    <!-- Decorative: flowing paragraph lines, centre -->
+    <g transform="translate(430, 50)" opacity="0.12">
+      <rect x="0"   y="0"  width="220" height="10" rx="5" fill="white"/>
+      <rect x="0"   y="18" width="190" height="10" rx="5" fill="white"/>
+      <rect x="0"   y="36" width="210" height="10" rx="5" fill="white"/>
+      <rect x="0"   y="54" width="160" height="10" rx="5" fill="white"/>
+      <rect x="0"   y="80" width="220" height="10" rx="5" fill="white"/>
+      <rect x="0"   y="98" width="200" height="10" rx="5" fill="white"/>
+      <rect x="0"  y="116" width="180" height="10" rx="5" fill="white"/>
+    </g>
+
+    <!-- Decorative: small terminal/chip, right -->
+    <g transform="translate(840, 50)" opacity="0.18">
+      <rect x="0" y="0" width="110" height="110" rx="10" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="14" y="14" width="82" height="82" rx="6" fill="none" stroke="white" stroke-width="1"/>
+      <!-- pins left -->
+      <line x1="0"  y1="24" x2="-14" y2="24" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="0"  y1="42" x2="-14" y2="42" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="0"  y1="60" x2="-14" y2="60" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="0"  y1="78" x2="-14" y2="78" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="0"  y1="96" x2="-14" y2="96" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <!-- pins right -->
+      <line x1="110" y1="24" x2="124" y2="24" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="110" y1="42" x2="124" y2="42" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="110" y1="60" x2="124" y2="60" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="110" y1="78" x2="124" y2="78" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="110" y1="96" x2="124" y2="96" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <!-- inner dot -->
+      <circle cx="55" cy="55" r="12" fill="white" opacity="0.15"/>
+      <circle cx="55" cy="55" r="5" fill="white" opacity="0.4"/>
+    </g>
+
+    <!-- Tagline, centred -->
+    <text x="600" y="122" text-anchor="middle"
+          font-family="Courier New, monospace"
+          font-size="13"
+          letter-spacing="5"
+          fill="white"
+          opacity="0.6"
+          text-transform="uppercase">WRITING ON TECHNOLOGY &amp; EVERYDAY LIFE</text>
+
+    <!-- Subtle bottom fade -->
+    <rect width="1200" height="40" y="180" fill="#2a6b4f" opacity="0.3"/>
+  </svg>
 </div>
 
 <div class="cat-strip">
@@ -383,11 +495,58 @@
   </main>
 
   <aside class="sidebar">
-    <div class="sidebar-box">
-      <div class="sidebar-box-title">About</div>
-      <div class="sidebar-box-body about-box">
-        <p>Writing by Pasi Seppanen. On technology, everyday life, and whatever else catches my attention.<br><br>
-        Reach me at <a href="mailto:pasi@seppanen.eu">pasi@seppanen.eu</a></p>
+    <div class="about-card">
+      <div class="about-card-banner">
+        <svg viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="abg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#1a4a35"/>
+              <stop offset="100%" stop-color="#3d8b68"/>
+            </linearGradient>
+          </defs>
+          <rect width="300" height="80" fill="url(#abg)"/>
+          <!-- subtle grid -->
+          <line x1="0" y1="26" x2="300" y2="26" stroke="white" stroke-width="0.5" opacity="0.07"/>
+          <line x1="0" y1="53" x2="300" y2="53" stroke="white" stroke-width="0.5" opacity="0.07"/>
+          <line x1="100" y1="0" x2="100" y2="80" stroke="white" stroke-width="0.5" opacity="0.07"/>
+          <line x1="200" y1="0" x2="200" y2="80" stroke="white" stroke-width="0.5" opacity="0.07"/>
+          <!-- open book -->
+          <g transform="translate(20, 15)" opacity="0.3">
+            <path d="M25,0 Q12,2 0,8 L0,44 Q12,40 25,41 Z" fill="none" stroke="white" stroke-width="1.2"/>
+            <path d="M25,0 Q38,2 50,8 L50,44 Q38,40 25,41 Z" fill="none" stroke="white" stroke-width="1.2"/>
+            <line x1="25" y1="0" x2="25" y2="41" stroke="white" stroke-width="1.2"/>
+            <line x1="4" y1="14" x2="21" y2="12" stroke="white" stroke-width="0.8" opacity="0.7"/>
+            <line x1="4" y1="21" x2="21" y2="19" stroke="white" stroke-width="0.8" opacity="0.6"/>
+            <line x1="4" y1="28" x2="18" y2="26" stroke="white" stroke-width="0.8" opacity="0.5"/>
+            <line x1="29" y1="12" x2="46" y2="14" stroke="white" stroke-width="0.8" opacity="0.7"/>
+            <line x1="29" y1="19" x2="46" y2="21" stroke="white" stroke-width="0.8" opacity="0.6"/>
+            <line x1="29" y1="26" x2="42" y2="28" stroke="white" stroke-width="0.8" opacity="0.5"/>
+          </g>
+          <!-- paragraph lines right side -->
+          <g transform="translate(116, 18)" opacity="0.15">
+            <rect x="0" y="0"  width="160" height="7" rx="3" fill="white"/>
+            <rect x="0" y="13" width="130" height="7" rx="3" fill="white"/>
+            <rect x="0" y="26" width="150" height="7" rx="3" fill="white"/>
+            <rect x="0" y="39" width="110" height="7" rx="3" fill="white"/>
+          </g>
+          <!-- label -->
+          <text x="16" y="68"
+                font-family="Courier New, monospace"
+                font-size="8"
+                letter-spacing="3"
+                fill="white"
+                opacity="0.5">ABOUT</text>
+        </svg>
+      </div>
+      <div class="about-card-body">
+        <p>Personal writing by Pasi Seppanen &mdash; on technology, everyday life, and whatever else catches my attention.</p>
+        <a class="about-card-contact" href="mailto:pasi@seppanen.eu">
+          <svg width="13" height="13" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0.5" y="2" width="12" height="9" rx="1.5" fill="none" stroke="#2a6b4f" stroke-width="1.2"/>
+            <polyline points="0.5,3 6.5,8 12.5,3" fill="none" stroke="#2a6b4f" stroke-width="1.2"/>
+          </svg>
+          pasi@seppanen.eu
+        </a>
       </div>
     </div>
   </aside>
