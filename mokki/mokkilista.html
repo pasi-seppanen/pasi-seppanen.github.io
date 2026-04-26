@@ -1253,11 +1253,12 @@ function renderContacts() {
     list.innerHTML = '<div class="empty">Ei yhteystietoja.</div>';
   } else {
     list.innerHTML = data.contacts.map(c => `
-      <div class="item">
+      <div class="item" data-contact-id="${c.id}">
         <div class="item-body">
           <div class="item-title">${escapeHtml(c.name)} ${c.role ? `<span style="font-weight:400; color:#888; font-size:13px;">— ${escapeHtml(c.role)}</span>` : ''}</div>
           ${c.phone ? `<div class="item-meta"><span>📞 <a href="tel:${escapeHtml(c.phone)}" style="color:#6b4226; text-decoration:none;">${escapeHtml(c.phone)}</a></span></div>` : ''}
         </div>
+        <button class="edit-task-btn edit-contact-btn" data-id="${c.id}" title="Muokkaa">✎</button>
         <button class="del-btn" data-id="${c.id}" title="Poista">✕</button>
       </div>
     `).join('');
@@ -1279,6 +1280,35 @@ document.getElementById('contact-list').addEventListener('click', e => {
   if (!id) return;
   if (e.target.classList.contains('del-btn')) {
     if (confirm('Poistetaanko yhteystieto?')) { data.contacts = data.contacts.filter(x => x.id !== id); saveData(); renderContacts(); }
+  } else if (e.target.classList.contains('edit-contact-btn')) {
+    const c = data.contacts.find(x => x.id === id);
+    if (!c) return;
+    const item = e.target.closest('.item');
+    item.innerHTML = `
+      <div class="task-edit-form" style="width:100%;">
+        <div class="task-edit-row">
+          <input type="text" class="contact-edit-name" value="${escapeHtml(c.name)}" placeholder="Nimi" style="flex:1; min-width:120px;" />
+          <input type="text" class="contact-edit-role" value="${escapeHtml(c.role||'')}" placeholder="Rooli" style="flex:1; min-width:140px;" />
+          <input type="tel" class="contact-edit-phone" value="${escapeHtml(c.phone||'')}" placeholder="Puhelin" style="flex:1; min-width:120px;" />
+        </div>
+        <div class="task-edit-actions">
+          <button class="btn-save contact-edit-save" data-id="${c.id}">Tallenna</button>
+          <button class="btn-cancel-edit contact-edit-cancel">Peruuta</button>
+        </div>
+      </div>`;
+    item.querySelector('.contact-edit-name').focus();
+  } else if (e.target.classList.contains('contact-edit-save')) {
+    const c = data.contacts.find(x => x.id === id);
+    if (!c) return;
+    const form = e.target.closest('.task-edit-form');
+    const name = form.querySelector('.contact-edit-name').value.trim();
+    if (!name) { form.querySelector('.contact-edit-name').focus(); return; }
+    c.name = name;
+    c.role = form.querySelector('.contact-edit-role').value.trim();
+    c.phone = form.querySelector('.contact-edit-phone').value.trim();
+    saveData(); renderContacts();
+  } else if (e.target.classList.contains('contact-edit-cancel')) {
+    renderContacts();
   }
 });
 
