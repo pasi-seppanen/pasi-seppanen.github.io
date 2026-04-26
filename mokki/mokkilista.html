@@ -274,6 +274,20 @@ h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; color: #1a1a1a; }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.error { background: #842029; }
+.task-edit-form { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.task-edit-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.task-edit-form input[type="text"] { width: 100%; }
+.task-edit-form input, .task-edit-form select {
+  border: 1px solid #d8d0bf; border-radius: 6px; padding: 7px 10px;
+  font-size: 14px; font-family: inherit; background: #fff;
+}
+.task-edit-form input:focus, .task-edit-form select:focus { outline: none; border-color: #6b4226; }
+.task-edit-actions { display: flex; gap: 6px; margin-top: 2px; }
+.btn-save { background: #6b4226; color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.btn-save:hover { background: #523219; }
+.btn-cancel-edit { background: #fff; color: #666; border: 1px solid #d8d0bf; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.edit-task-btn { background: none; border: none; color: #bbb; cursor: pointer; font-size: 14px; padding: 2px 5px; border-radius: 4px; flex-shrink: 0; }
+.edit-task-btn:hover { color: #6b4226; background: #f5f0e8; }
 @media (max-width: 480px) {
   .add-form { flex-direction: column; }
   .add-form input[type="text"], .add-form select { width: 100%; }
@@ -684,12 +698,13 @@ function renderTasks() {
       const projTag = proj ? `<a class="tag proj" data-jump-proj="${proj.id}">📁 ${escapeHtml(proj.text)}</a>` : '';
       const meta = (who || date || projTag) ? `<div class="item-meta">${who}${date}${projTag}</div>` : '';
       return `
-        <div class="item ${t.done ? 'done' : ''}">
+        <div class="item ${t.done ? 'done' : ''}" data-task-id="${t.id}">
           <input type="checkbox" class="checkbox" data-id="${t.id}" ${t.done ? 'checked' : ''}>
           <div class="item-body">
             <div class="item-title">${escapeHtml(t.text)}</div>
             ${meta}
           </div>
+          <button class="edit-task-btn" data-id="${t.id}" title="Muokkaa">✎</button>
           <button class="del-btn" data-id="${t.id}" title="Poista">✕</button>
         </div>
       `;
@@ -736,6 +751,47 @@ document.getElementById('task-list').addEventListener('click', e => {
       data.tasks = data.tasks.filter(x => x.id !== id);
       saveData(); renderTasks(); renderProjects();
     }
+  } else if (e.target.classList.contains('edit-task-btn')) {
+    const t = data.tasks.find(x => x.id === id);
+    if (!t) return;
+    const item = e.target.closest('.item');
+    const projOpts = ['<option value="">(Ei projektia)</option>']
+      .concat(data.projects.map(p =>
+        `<option value="${p.id}" ${t.projectId === p.id ? 'selected' : ''}>${escapeHtml(p.text)}</option>`
+      )).join('');
+    item.innerHTML = `
+      <div class="task-edit-form">
+        <input type="text" class="task-edit-text" value="${escapeHtml(t.text)}" />
+        <div class="task-edit-row">
+          <select class="task-edit-who">
+            <option value="" ${!t.who ? 'selected' : ''}>Kuka?</option>
+            <option value="itse" ${t.who==='itse' ? 'selected' : ''}>Itse</option>
+            <option value="tero" ${t.who==='tero' ? 'selected' : ''}>Tero</option>
+            <option value="muu" ${t.who==='muu' ? 'selected' : ''}>Muu</option>
+          </select>
+          <input type="date" class="task-edit-date" value="${t.date||''}" />
+          <select class="task-edit-proj">${projOpts}</select>
+        </div>
+        <div class="task-edit-actions">
+          <button class="btn-save task-edit-save" data-id="${t.id}">Tallenna</button>
+          <button class="btn-cancel-edit task-edit-cancel">Peruuta</button>
+        </div>
+      </div>`;
+    item.querySelector('.task-edit-text').focus();
+  } else if (e.target.classList.contains('task-edit-save')) {
+    const t = data.tasks.find(x => x.id === id);
+    if (!t) return;
+    const form = e.target.closest('.task-edit-form');
+    const text = form.querySelector('.task-edit-text').value.trim();
+    if (!text) { form.querySelector('.task-edit-text').focus(); return; }
+    t.text = text;
+    t.who = form.querySelector('.task-edit-who').value;
+    t.date = form.querySelector('.task-edit-date').value;
+    const pv = form.querySelector('.task-edit-proj').value;
+    t.projectId = pv ? parseInt(pv) : null;
+    saveData(); renderTasks(); renderProjects();
+  } else if (e.target.classList.contains('task-edit-cancel')) {
+    renderTasks();
   }
 });
 
@@ -786,11 +842,17 @@ function renderProjects() {
             <div class="proj-quick-add">
               <button data-quick-task="${p.id}">+ Tehtävä</button>
               <button data-quick-shop="${p.id}">+ Hankinta</button>
+              <button data-link-existing-task="${p.id}">↗ Linkitä tehtävä</button>
             </div>
             <div class="proj-quick-form" data-quick-form-task="${p.id}">
               <input type="text" placeholder="Tehtävän nimi" data-quick-task-input="${p.id}" />
               <button data-quick-task-create="${p.id}">Lisää</button>
               <button class="cancel-btn" data-quick-task-cancel="${p.id}">×</button>
+            </div>
+            <div class="proj-quick-form" data-quick-form-link-task="${p.id}">
+              <select data-link-task-select="${p.id}" style="flex:1; min-width:160px;"></select>
+              <button data-link-task-confirm="${p.id}">Linkitä</button>
+              <button class="cancel-btn" data-link-task-cancel="${p.id}">×</button>
             </div>
             <div class="proj-quick-form" data-quick-form-shop="${p.id}">
               <input type="text" placeholder="Hankinnan nimi" data-quick-shop-input="${p.id}" />
@@ -836,6 +898,29 @@ document.getElementById('proj-list').addEventListener('click', e => {
   if (quickTaskBtn) { const form = document.querySelector(`[data-quick-form-task="${quickTaskBtn}"]`); form.classList.toggle('active'); if (form.classList.contains('active')) form.querySelector('input').focus(); return; }
   const quickShopBtn = t.dataset.quickShop;
   if (quickShopBtn) { const form = document.querySelector(`[data-quick-form-shop="${quickShopBtn}"]`); form.classList.toggle('active'); if (form.classList.contains('active')) form.querySelector('input').focus(); return; }
+  const linkExistingBtn = t.dataset.linkExistingTask;
+  if (linkExistingBtn) {
+    const projId = parseInt(linkExistingBtn);
+    const form = document.querySelector(`[data-quick-form-link-task="${linkExistingBtn}"]`);
+    const sel = form.querySelector(`[data-link-task-select="${linkExistingBtn}"]`);
+    const unlinked = data.tasks.filter(tk => tk.projectId !== projId);
+    if (!unlinked.length) { showToast('Kaikki tehtävät on jo linkitetty tähän projektiin'); return; }
+    sel.innerHTML = unlinked.map(tk => `<option value="${tk.id}">${escapeHtml(tk.text)}</option>`).join('');
+    form.classList.toggle('active');
+    if (form.classList.contains('active')) sel.focus();
+    return;
+  }
+  const linkTaskConfirm = t.dataset.linkTaskConfirm;
+  if (linkTaskConfirm) {
+    const projId = parseInt(linkTaskConfirm);
+    const sel = document.querySelector(`[data-link-task-select="${linkTaskConfirm}"]`);
+    const taskId = parseInt(sel.value);
+    const task = data.tasks.find(tk => tk.id === taskId);
+    if (task) { task.projectId = projId; saveData(); renderTasks(); renderProjects(); showToast('Tehtävä linkitetty projektiin'); }
+    return;
+  }
+  const linkTaskCancel = t.dataset.linkTaskCancel;
+  if (linkTaskCancel) { document.querySelector(`[data-quick-form-link-task="${linkTaskCancel}"]`).classList.remove('active'); return; }
   const taskCreateId = parseInt(t.dataset.quickTaskCreate);
   if (taskCreateId) { const inp = document.querySelector(`[data-quick-task-input="${taskCreateId}"]`); const text = inp.value.trim(); if (!text) { inp.focus(); return; } data.tasks.push({ id: nextId(data.tasks), text, who: '', date: '', done: false, projectId: taskCreateId }); inp.value = ''; saveData(); renderTasks(); renderProjects(); showToast('Tehtävä lisätty projektiin'); return; }
   const taskCancelId = parseInt(t.dataset.quickTaskCancel);
