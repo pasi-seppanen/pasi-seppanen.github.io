@@ -5,6 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mökkilista</title>
 <style>
+/* ===== SYNC STATUS ===== */
+#sync-status {
+  position: fixed; top: 10px; right: 12px; z-index: 500;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px; padding: 4px 10px; border-radius: 20px;
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+#sync-status.show { opacity: 1; }
+#sync-status.saving { background: #fff3cd; color: #664d03; }
+#sync-status.saved  { background: #d1e7dd; color: #0f5132; }
+#sync-status.error  { background: #f8d7da; color: #842029; }
+#loading-overlay {
+  position: fixed; inset: 0; z-index: 9998;
+  background: #faf8f4; display: flex; align-items: center; justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px; color: #888;
+}
 /* ===== LOGIN OVERLAY ===== */
 #login-overlay {
   position: fixed; inset: 0; z-index: 9999;
@@ -264,6 +282,9 @@ h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; color: #1a1a1a; }
 </head>
 <body>
 
+<div id="loading-overlay">Ladataan...</div>
+<div id="sync-status"></div>
+
 <!-- LOGIN OVERLAY -->
 <div id="login-overlay">
   <div class="login-box">
@@ -374,18 +395,72 @@ h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; color: #1a1a1a; }
 </div><!-- /#app -->
 
 <script>
-// ===== AUTH =====
-const AUTH_KEY = 'mokki-auth-v1';
-const PIN_HASH = '20ee235b5de5b36244da6f9aa1cbdd032a90867ba92276ccc8c38c0d0d57fcec';
+// ===== CONFIG =====
+const AUTH_KEY    = 'mokki-auth-v1';
+const PIN_HASH    = '20ee235b5de5b36244da6f9aa1cbdd032a90867ba92276ccc8c38c0d0d57fcec';
+const BIN_ID      = '69edeebf856a68218973d1fb';
+const API_KEY     = '$2a$10$iCMpZEjtip9rODOOTKXtJuzuNq0zhPNYHkxmVPp9cDr70OyPZ9hd2';
+const BIN_URL     = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const STORAGE_KEY = 'mokki-lista-v1';
 
+// ===== SYNC STATUS UI =====
+const syncEl = document.getElementById('sync-status');
+let syncTimer = null;
+function showSync(state, msg) {
+  syncEl.className = `show ${state}`;
+  syncEl.textContent = msg;
+  if (syncTimer) clearTimeout(syncTimer);
+  if (state === 'saved') syncTimer = setTimeout(() => { syncEl.className = ''; }, 2000);
+}
+
+// ===== JSONBIN =====
+async function fetchRemote() {
+  const r = await fetch(`${BIN_URL}/latest`, { headers: { 'X-Master-Key': API_KEY } });
+  if (!r.ok) throw new Error('fetch failed');
+  const j = await r.json();
+  return j.record;
+}
+
+let syncDebounce = null;
+function scheduleSyncRemote() {
+  if (syncDebounce) clearTimeout(syncDebounce);
+  showSync('saving', '↑ Tallennetaan...');
+  syncDebounce = setTimeout(async () => {
+    try {
+      const r = await fetch(BIN_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify(data)
+      });
+      if (!r.ok) throw new Error('save failed');
+      showSync('saved', '✓ Tallennettu');
+    } catch (e) {
+      showSync('error', '⚠ Tallennus epäonnistui');
+    }
+  }, 1200);
+}
+
+// ===== AUTH =====
 async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-function showApp() {
+async function showApp() {
   document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('loading-overlay').style.display = 'flex';
+  try {
+    const remote = await fetchRemote();
+    data = migrate(remote);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    // fall back to localStorage cache
+    showSync('error', '⚠ Offline – käytetään paikallista dataa');
+  }
+  document.getElementById('loading-overlay').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+  renderAll();
+  notesEl.value = data.notes || '';
 }
 
 async function tryLogin() {
@@ -406,10 +481,13 @@ async function tryLogin() {
   }
 }
 
-// Check existing auth
+// Check existing auth on load
 (function() {
   if (localStorage.getItem(AUTH_KEY) === PIN_HASH) showApp();
-  else document.getElementById('pin-input').focus();
+  else {
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('pin-input').focus();
+  }
 })();
 
 document.getElementById('login-btn').addEventListener('click', tryLogin);
@@ -418,7 +496,6 @@ document.getElementById('pin-input').addEventListener('keydown', e => {
 });
 
 // ===== APP =====
-const STORAGE_KEY = 'mokki-lista-v1';
 const SCHEMA_VERSION = 3;
 
 const DEFAULT_DATA = {
@@ -444,7 +521,10 @@ const DEFAULT_DATA = {
   notes: ''
 };
 
-let data = loadData();
+let data = (function() {
+  try { const r = localStorage.getItem(STORAGE_KEY); if (r) return JSON.parse(r); } catch(e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+})();
 
 function loadData() {
   try {
@@ -478,6 +558,7 @@ function migrate(d) {
 function saveData() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
   catch (e) { console.error('Save failed', e); }
+  scheduleSyncRemote();
 }
 
 function nextId(list) {
@@ -959,7 +1040,6 @@ function renderAll() {
   renderContacts();
 }
 
-renderAll();
 </script>
 </body>
 </html>
