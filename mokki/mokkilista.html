@@ -356,12 +356,7 @@ h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; color: #1a1a1a; }
 <div class="section active" id="section-tasks">
   <div class="add-form">
     <input type="text" id="task-input" placeholder="Lisää tehtävä..." />
-    <select id="task-who">
-      <option value="">Kuka?</option>
-      <option value="itse">Itse</option>
-      <option value="tero">Tero</option>
-      <option value="muu">Muu</option>
-    </select>
+    <select id="task-who" class="who-select"></select>
     <input type="date" id="task-date" />
     <select id="task-recurrence">
       <option value="">Ei toistoa</option>
@@ -634,6 +629,25 @@ function escapeHtml(s) {
   return div.innerHTML;
 }
 
+function whoTag(who) {
+  if (!who) return '';
+  const LEGACY = { itse: 'Itse', tero: 'Tero', muu: 'Muu' };
+  const label = LEGACY[who] || who;
+  const cls   = LEGACY[who] ? who : '';
+  return `<span class="tag ${cls}">${escapeHtml(label)}</span>`;
+}
+
+function refreshWhoSelects() {
+  const opts = ['<option value="">Kuka?</option>']
+    .concat(data.contacts.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`))
+    .concat(['<option value="__new__">+ Lisää yhteystieto...</option>']);
+  document.querySelectorAll('select.who-select').forEach(sel => {
+    const cur = sel.value;
+    sel.innerHTML = opts.join('');
+    if (cur && cur !== '__new__') sel.value = cur;
+  });
+}
+
 function linkify(text) {
   return escapeHtml(text).replace(
     /(https?:\/\/[^\s]+)/g,
@@ -799,7 +813,7 @@ function renderTasks() {
   });
 
   const taskHtml = t => {
-    const who = t.who ? `<span class="tag ${t.who}">${t.who === 'itse' ? 'Itse' : t.who === 'tero' ? 'Tero' : 'Muu'}</span>` : '';
+    const who = whoTag(t.who);
     const date = t.date ? `<span>📅 ${fmtDate(t.date)}</span>` : '';
     const recur = t.recurrence ? `<span class="tag recur">↻ ${RECUR_LABELS[t.recurrence]}</span>` : '';
     const proj = getProject(t.projectId);
@@ -840,6 +854,14 @@ document.getElementById('task-add').addEventListener('click', () => {
   input.value = ''; who.value = ''; date.value = ''; recurrence.value = ''; proj.value = '';
   saveData(); renderTasks(); renderProjects();
   input.focus();
+});
+
+document.getElementById('task-who').addEventListener('change', () => {
+  if (document.getElementById('task-who').value === '__new__') {
+    document.getElementById('task-who').value = '';
+    switchTab('contacts');
+    showToast('Lisää yhteystieto, palaa sitten Tehtävät-välilehdelle');
+  }
 });
 
 document.getElementById('task-input').addEventListener('keydown', e => {
@@ -900,11 +922,12 @@ document.getElementById('task-list').addEventListener('click', e => {
       <div class="task-edit-form">
         <input type="text" class="task-edit-text" value="${escapeHtml(t.text)}" />
         <div class="task-edit-row">
-          <select class="task-edit-who">
-            <option value="" ${!t.who ? 'selected' : ''}>Kuka?</option>
-            <option value="itse" ${t.who==='itse' ? 'selected' : ''}>Itse</option>
-            <option value="tero" ${t.who==='tero' ? 'selected' : ''}>Tero</option>
-            <option value="muu" ${t.who==='muu' ? 'selected' : ''}>Muu</option>
+          <select class="task-edit-who who-select">
+            ${['<option value="">Kuka?</option>']
+              .concat(data.contacts.map(c => `<option value="${escapeHtml(c.name)}" ${t.who===c.name?'selected':''}>${escapeHtml(c.name)}</option>`))
+              .concat(t.who && !data.contacts.find(c=>c.name===t.who) && t.who !== ''
+                ? [`<option value="${escapeHtml(t.who)}" selected>${escapeHtml({itse:'Itse',tero:'Tero',muu:'Muu'}[t.who]||t.who)}</option>`] : [])
+              .join('')}
           </select>
           <input type="date" class="task-edit-date" value="${t.date||''}" />
           <select class="task-edit-recur">
@@ -1272,14 +1295,14 @@ document.getElementById('contact-add').addEventListener('click', () => {
   if (!name.value.trim()) return;
   data.contacts.push({ id: nextId(data.contacts), name: name.value.trim(), role: role.value.trim(), phone: phone.value.trim() });
   name.value = ''; role.value = ''; phone.value = '';
-  saveData(); renderContacts();
+  saveData(); renderContacts(); refreshWhoSelects();
 });
 
 document.getElementById('contact-list').addEventListener('click', e => {
   const id = parseInt(e.target.dataset.id);
   if (!id) return;
   if (e.target.classList.contains('del-btn')) {
-    if (confirm('Poistetaanko yhteystieto?')) { data.contacts = data.contacts.filter(x => x.id !== id); saveData(); renderContacts(); }
+    if (confirm('Poistetaanko yhteystieto?')) { data.contacts = data.contacts.filter(x => x.id !== id); saveData(); renderContacts(); refreshWhoSelects(); }
   } else if (e.target.classList.contains('edit-contact-btn')) {
     const c = data.contacts.find(x => x.id === id);
     if (!c) return;
@@ -1306,7 +1329,7 @@ document.getElementById('contact-list').addEventListener('click', e => {
     c.name = name;
     c.role = form.querySelector('.contact-edit-role').value.trim();
     c.phone = form.querySelector('.contact-edit-phone').value.trim();
-    saveData(); renderContacts();
+    saveData(); renderContacts(); refreshWhoSelects();
   } else if (e.target.classList.contains('contact-edit-cancel')) {
     renderContacts();
   }
@@ -1453,6 +1476,7 @@ document.getElementById('import-file').addEventListener('change', e => {
 
 function renderAll() {
   refreshProjectSelects();
+  refreshWhoSelects();
   renderTasks();
   renderProjects();
   renderShopping();
