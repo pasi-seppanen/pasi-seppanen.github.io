@@ -970,15 +970,14 @@ function renderShopping() {
       const proj = getProject(s.projectId);
       const projTag = proj ? `<a class="tag proj" data-jump-proj="${proj.id}">📁 ${escapeHtml(proj.text)}</a>` : '';
       return `
-        <div class="item ${s.done ? 'done' : ''}">
+        <div class="item ${s.done ? 'done' : ''}" data-shop-id="${s.id}">
           <input type="checkbox" class="checkbox" data-id="${s.id}" ${s.done ? 'checked' : ''}>
           <div class="item-body">
             <div class="item-title">${escapeHtml(s.text)}</div>
             ${projTag ? `<div class="item-meta">${projTag}</div>` : ''}
-            ${s.info ? `<div class="item-notes" data-info-view="${s.id}">${linkify(s.info)}</div>` : ''}
-            <textarea class="shop-info-edit" data-id="${s.id}" placeholder="Lisätiedot, linkki..." style="display:none; width:100%; margin-top:6px; min-height:50px; border:1px solid #d8d0bf; border-radius:4px; padding:6px; font-family:inherit; font-size:13px;">${escapeHtml(s.info||'')}</textarea>
-            <button class="edit-shop" data-id="${s.id}" style="font-size:11px; background:none; border:none; color:#888; cursor:pointer; margin-top:4px; padding:0;">✎ ${s.info ? 'muokkaa lisätietoja' : 'lisää lisätietoja'}</button>
+            ${s.info ? `<div class="item-notes">${linkify(s.info)}</div>` : ''}
           </div>
+          <button class="edit-task-btn" data-id="${s.id}" title="Muokkaa">✎</button>
           <button class="del-btn" data-id="${s.id}" title="Poista">✕</button>
         </div>
       `;
@@ -1009,14 +1008,46 @@ document.getElementById('shop-list').addEventListener('click', e => {
   if (jumpId) { switchTab('projects'); setTimeout(() => { const el = document.querySelector(`[data-proj-anchor="${jumpId}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50); return; }
   const id = parseInt(e.target.dataset.id);
   if (!id) return;
-  if (e.target.classList.contains('checkbox')) { const s = data.shopping.find(x => x.id === id); if (s) { s.done = e.target.checked; saveData(); renderShopping(); renderProjects(); } }
-  else if (e.target.classList.contains('del-btn')) { data.shopping = data.shopping.filter(x => x.id !== id); saveData(); renderShopping(); renderProjects(); }
-  else if (e.target.classList.contains('edit-shop')) {
-    const ta = e.target.parentElement.querySelector('.shop-info-edit');
-    const view = e.target.parentElement.querySelector('[data-info-view]');
-    const isHidden = ta.style.display === 'none';
-    if (isHidden) { if (view) view.style.display = 'none'; ta.style.display = 'block'; e.target.textContent = '✓ tallenna'; ta.focus(); }
-    else { const s = data.shopping.find(x => x.id === id); if (s) { s.info = ta.value; saveData(); renderShopping(); } }
+  if (e.target.classList.contains('checkbox')) {
+    const s = data.shopping.find(x => x.id === id);
+    if (s) { s.done = e.target.checked; saveData(); renderShopping(); renderProjects(); }
+  } else if (e.target.classList.contains('del-btn')) {
+    data.shopping = data.shopping.filter(x => x.id !== id);
+    saveData(); renderShopping(); renderProjects();
+  } else if (e.target.classList.contains('edit-task-btn')) {
+    const s = data.shopping.find(x => x.id === id);
+    if (!s) return;
+    const item = e.target.closest('.item');
+    const projOpts = ['<option value="">(Ei projektia)</option>']
+      .concat(data.projects.map(p =>
+        `<option value="${p.id}" ${s.projectId === p.id ? 'selected' : ''}>${escapeHtml(p.text)}</option>`
+      )).join('');
+    item.innerHTML = `
+      <div class="task-edit-form">
+        <input type="text" class="shop-edit-text" value="${escapeHtml(s.text)}" />
+        <textarea class="shop-edit-info" placeholder="Lisätiedot, linkki, määrä..." style="min-height:56px; resize:vertical; border:1px solid #d8d0bf; border-radius:6px; padding:7px 10px; font-size:13px; font-family:inherit; width:100%;">${escapeHtml(s.info||'')}</textarea>
+        <div class="task-edit-row">
+          <select class="shop-edit-proj" style="flex:1;">${projOpts}</select>
+        </div>
+        <div class="task-edit-actions">
+          <button class="btn-save shop-edit-save" data-id="${s.id}">Tallenna</button>
+          <button class="btn-cancel-edit shop-edit-cancel">Peruuta</button>
+        </div>
+      </div>`;
+    item.querySelector('.shop-edit-text').focus();
+  } else if (e.target.classList.contains('shop-edit-save')) {
+    const s = data.shopping.find(x => x.id === id);
+    if (!s) return;
+    const form = e.target.closest('.task-edit-form');
+    const text = form.querySelector('.shop-edit-text').value.trim();
+    if (!text) { form.querySelector('.shop-edit-text').focus(); return; }
+    s.text = text;
+    s.info = form.querySelector('.shop-edit-info').value.trim();
+    const pv = form.querySelector('.shop-edit-proj').value;
+    s.projectId = pv ? parseInt(pv) : null;
+    saveData(); renderShopping(); renderProjects();
+  } else if (e.target.classList.contains('shop-edit-cancel')) {
+    renderShopping();
   }
 });
 
