@@ -886,6 +886,8 @@ document.getElementById('task-list').addEventListener('click', e => {
     return;
   }
 
+  if (e.target.classList.contains('task-edit-cancel')) { renderTasks(); return; }
+
   const id = parseInt(e.target.dataset.id);
   if (!id) return;
 
@@ -1097,6 +1099,8 @@ document.getElementById('proj-list').addEventListener('click', e => {
   if (shopCreateId) { const inp = document.querySelector(`[data-quick-shop-input="${shopCreateId}"]`); const infoInp = document.querySelector(`[data-quick-shop-info="${shopCreateId}"]`); const text = inp.value.trim(); if (!text) { inp.focus(); return; } data.shopping.push({ id: nextId(data.shopping), text, info: infoInp.value.trim(), done: false, archived: false, projectId: shopCreateId }); inp.value = ''; infoInp.value = ''; saveData(); renderShopping(); renderProjects(); showToast('Hankinta lisätty projektiin'); return; }
   const shopCancelId = parseInt(t.dataset.quickShopCancel);
   if (shopCancelId) { document.querySelector(`[data-quick-form-shop="${shopCancelId}"]`).classList.remove('active'); return; }
+  if (t.classList.contains('proj-edit-cancel')) { renderProjects(); return; }
+
   const id = parseInt(t.dataset.id);
   if (!id) return;
   if (t.classList.contains('del-btn')) {
@@ -1224,6 +1228,8 @@ document.getElementById('shop-list').addEventListener('click', e => {
     return;
   }
 
+  if (e.target.classList.contains('shop-edit-cancel')) { renderShopping(); return; }
+
   const id = parseInt(e.target.dataset.id);
   if (!id) return;
   if (e.target.classList.contains('checkbox')) {
@@ -1299,6 +1305,8 @@ document.getElementById('contact-add').addEventListener('click', () => {
 });
 
 document.getElementById('contact-list').addEventListener('click', e => {
+  if (e.target.classList.contains('contact-edit-cancel')) { renderContacts(); return; }
+
   const id = parseInt(e.target.dataset.id);
   if (!id) return;
   if (e.target.classList.contains('del-btn')) {
