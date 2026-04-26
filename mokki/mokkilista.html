@@ -968,8 +968,6 @@ function renderProjects() {
             <div class="item-title">${escapeHtml(p.text)}</div>
             <div class="item-meta"><span class="tag ${STATUS_COLORS[p.status]||''}">${STATUS_LABELS[p.status]||p.status}</span></div>
             ${p.notes ? `<div class="item-notes">${linkify(p.notes)}</div>` : ''}
-            <textarea class="proj-notes-edit" data-id="${p.id}" placeholder="Muistiinpanot, mitat, materiaalit..." style="display:none; width:100%; margin-top:6px; min-height:60px; border:1px solid #d8d0bf; border-radius:4px; padding:6px; font-family:inherit; font-size:13px;">${escapeHtml(p.notes||'')}</textarea>
-            <button class="edit-proj" data-id="${p.id}" style="font-size:11px; background:none; border:none; color:#888; cursor:pointer; margin-top:4px; padding:0;">✎ muokkaa muistiinpanoja</button>
             ${linkedBlock}
             <div class="proj-quick-add">
               <button data-quick-task="${p.id}">+ Tehtävä</button>
@@ -993,6 +991,7 @@ function renderProjects() {
               <button class="cancel-btn" data-quick-shop-cancel="${p.id}">×</button>
             </div>
           </div>
+          <button class="edit-task-btn edit-proj-btn" data-id="${p.id}" title="Muokkaa projektia">✎</button>
           <button class="del-btn" data-id="${p.id}" title="Poista projekti">✕</button>
         </div>
       `;
@@ -1074,11 +1073,40 @@ document.getElementById('proj-list').addEventListener('click', e => {
       data.projects = data.projects.filter(x => x.id !== id);
       saveData(); refreshProjectSelects(); renderProjects(); renderTasks(); renderShopping();
     }
-  } else if (t.classList.contains('edit-proj')) {
-    const ta = t.parentElement.querySelector('.proj-notes-edit');
-    const isHidden = ta.style.display === 'none';
-    if (isHidden) { ta.style.display = 'block'; t.textContent = '✓ tallenna'; ta.focus(); }
-    else { const p = data.projects.find(x => x.id === id); if (p) { p.notes = ta.value; saveData(); renderProjects(); } }
+  } else if (t.classList.contains('edit-proj-btn')) {
+    const p = data.projects.find(x => x.id === id);
+    if (!p) return;
+    const item = t.closest('.item');
+    item.innerHTML = `
+      <div class="task-edit-form" style="width:100%;">
+        <input type="text" class="proj-edit-name" value="${escapeHtml(p.text)}" placeholder="Projektin nimi" style="width:100%;" />
+        <div class="task-edit-row">
+          <select class="proj-edit-status">
+            <option value="suunnittelu" ${p.status==='suunnittelu'?'selected':''}>Suunnittelu</option>
+            <option value="kaynnissa"   ${p.status==='kaynnissa'  ?'selected':''}>Käynnissä</option>
+            <option value="harkinnassa" ${p.status==='harkinnassa'?'selected':''}>Harkinnassa</option>
+            <option value="valmis"      ${p.status==='valmis'     ?'selected':''}>Valmis</option>
+          </select>
+        </div>
+        <textarea class="proj-edit-notes" placeholder="Muistiinpanot, mitat, materiaalit..." style="width:100%; min-height:72px; resize:vertical; border:1px solid #d8d0bf; border-radius:6px; padding:7px 10px; font-size:13px; font-family:inherit;">${escapeHtml(p.notes||'')}</textarea>
+        <div class="task-edit-actions">
+          <button class="btn-save proj-edit-save" data-id="${p.id}">Tallenna</button>
+          <button class="btn-cancel-edit proj-edit-cancel">Peruuta</button>
+        </div>
+      </div>`;
+    item.querySelector('.proj-edit-name').focus();
+  } else if (t.classList.contains('proj-edit-save')) {
+    const p = data.projects.find(x => x.id === id);
+    if (!p) return;
+    const form = t.closest('.task-edit-form');
+    const name = form.querySelector('.proj-edit-name').value.trim();
+    if (!name) { form.querySelector('.proj-edit-name').focus(); return; }
+    p.text = name;
+    p.status = form.querySelector('.proj-edit-status').value;
+    p.notes = form.querySelector('.proj-edit-notes').value.trim();
+    saveData(); refreshProjectSelects(); renderProjects(); renderTasks(); renderShopping();
+  } else if (t.classList.contains('proj-edit-cancel')) {
+    renderProjects();
   }
 });
 
