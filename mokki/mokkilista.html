@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mökkilista</title>
+<style>
+/* ===== LOGIN OVERLAY ===== */
+#login-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #faf8f4;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.login-box {
+  width: 100%; max-width: 320px;
+  background: #fff;
+  border: 1px solid #e5e0d6;
+  border-radius: 14px;
+  padding: 32px 28px;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+}
+.login-icon { font-size: 36px; margin-bottom: 12px; }
+.login-box h2 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 20px; font-weight: 600; color: #1a1a1a;
+  margin-bottom: 4px;
+}
+.login-box p {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px; color: #888; margin-bottom: 24px;
+}
+.pin-input {
+  width: 100%;
+  border: 2px solid #e5e0d6;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 22px;
+  letter-spacing: 0.3em;
+  text-align: center;
+  font-family: monospace;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 14px;
+  background: #faf8f4;
+}
+.pin-input:focus { border-color: #6b4226; background: #fff; }
+.pin-input.error { border-color: #c0392b; animation: shake 0.3s; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.login-btn {
+  width: 100%;
+  background: #6b4226; color: #fff;
+  border: none; border-radius: 8px;
+  padding: 12px; font-size: 15px; font-weight: 500;
+  cursor: pointer; transition: background 0.15s;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.login-btn:hover { background: #523219; }
+.login-error {
+  font-size: 12px; color: #c0392b;
+  margin-top: 10px; min-height: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ===== APP (hidden until logged in) ===== */
+#app { display: none; }
+
+/* ===== ORIGINAL APP STYLES ===== */
+:root { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #faf8f4;
+  color: #2a2a2a;
+  line-height: 1.5;
+  padding: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; color: #1a1a1a; }
+.subtitle { font-size: 13px; color: #777; margin-bottom: 18px; }
+.tabs {
+  display: flex; gap: 4px; border-bottom: 2px solid #e5e0d6;
+  margin-bottom: 16px; flex-wrap: wrap;
+}
+.tab {
+  padding: 8px 14px; cursor: pointer; border: none; background: none;
+  font-size: 14px; color: #666; border-radius: 6px 6px 0 0;
+  font-weight: 500; transition: all 0.15s; position: relative; bottom: -2px;
+}
+.tab:hover { background: #f0ebe0; color: #333; }
+.tab.active { color: #6b4226; border-bottom: 2px solid #6b4226; background: #fff; }
+.tab .badge {
+  display: inline-block; background: #d8d0bf; color: #5a5040;
+  border-radius: 10px; padding: 1px 7px; font-size: 11px;
+  margin-left: 5px; font-weight: 600;
+}
+.tab.active .badge { background: #6b4226; color: #fff; }
+.section { display: none; }
+.section.active { display: block; }
+.add-form {
+  background: #fff; border: 1px solid #e5e0d6; border-radius: 8px;
+  padding: 12px; margin-bottom: 14px;
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch;
+}
+.add-form input, .add-form select, .add-form textarea {
+  border: 1px solid #d8d0bf; border-radius: 6px; padding: 8px 10px;
+  font-size: 14px; font-family: inherit; background: #fff;
+}
+.add-form input:focus, .add-form select:focus, .add-form textarea:focus {
+  outline: none; border-color: #6b4226;
+}
+.add-form input[type="text"] { flex: 1; min-width: 160px; }
+.add-form button {
+  background: #6b4226; color: #fff; border: none; border-radius: 6px;
+  padding: 8px 16px; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: background 0.15s;
+}
+.add-form button:hover { background: #523219; }
+.add-form .new-proj-row {
+  display: flex; gap: 6px; flex-basis: 100%; align-items: stretch;
+}
+.add-form .new-proj-row input { flex: 1; }
+.list { display: flex; flex-direction: column; gap: 8px; }
+.item {
+  background: #fff; border: 1px solid #e5e0d6; border-radius: 8px;
+  padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px;
+  transition: box-shadow 0.15s;
+}
+.item:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.item.done { opacity: 0.55; background: #f5f2ec; }
+.item.done .item-title { text-decoration: line-through; }
+.checkbox {
+  width: 18px; height: 18px; margin-top: 2px; cursor: pointer;
+  accent-color: #6b4226; flex-shrink: 0;
+}
+.item-body { flex: 1; min-width: 0; }
+.item-title {
+  font-weight: 500; font-size: 14px; margin-bottom: 2px; word-wrap: break-word;
+}
+.item-meta {
+  font-size: 12px; color: #888; display: flex; gap: 10px; flex-wrap: wrap;
+  margin-top: 2px;
+}
+.item-meta span { display: inline-flex; align-items: center; gap: 3px; }
+.tag {
+  display: inline-block; background: #f0ebe0; color: #5a5040;
+  border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 500;
+}
+.tag.tero { background: #d1e7dd; color: #0f5132; }
+.tag.itse { background: #cfe2ff; color: #084298; }
+.tag.muu { background: #f0ebe0; color: #5a5040; }
+.tag.soon { background: #fff3cd; color: #664d03; }
+.tag.proj {
+  background: #ede1d1; color: #6b4226; cursor: pointer;
+  text-decoration: none;
+}
+.tag.proj:hover { background: #e0d2bd; }
+.item-notes {
+  font-size: 13px; color: #555; margin-top: 4px;
+  white-space: pre-wrap; word-wrap: break-word;
+}
+.item-notes a { color: #6b4226; word-break: break-all; }
+.del-btn {
+  background: none; border: none; color: #aaa; cursor: pointer;
+  font-size: 16px; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+}
+.del-btn:hover { color: #c00; background: #fdf0f0; }
+.empty {
+  text-align: center; color: #999; padding: 30px 12px;
+  font-size: 13px; font-style: italic;
+}
+.proj-linked {
+  margin-top: 10px; padding-top: 8px; border-top: 1px dashed #e5e0d6;
+  font-size: 13px;
+}
+.proj-linked-section { margin-bottom: 6px; }
+.proj-linked-label {
+  font-size: 11px; color: #888; text-transform: uppercase;
+  letter-spacing: 0.5px; font-weight: 600; margin-bottom: 4px;
+}
+.linked-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 3px 0; font-size: 13px;
+}
+.linked-item input[type="checkbox"] {
+  width: 14px; height: 14px; accent-color: #6b4226; cursor: pointer;
+}
+.linked-item.done { opacity: 0.5; }
+.linked-item.done .linked-text { text-decoration: line-through; }
+.linked-text { flex: 1; word-wrap: break-word; min-width: 0; }
+.linked-jump {
+  background: none; border: none; color: #6b4226; cursor: pointer;
+  font-size: 11px; padding: 0; text-decoration: underline;
+}
+.proj-quick-add {
+  display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;
+}
+.proj-quick-add button {
+  background: #f0ebe0; border: 1px solid #d8d0bf; color: #5a5040;
+  border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+  font-family: inherit;
+}
+.proj-quick-add button:hover { background: #e0d2bd; }
+.proj-quick-form {
+  display: none; gap: 6px; margin-top: 6px; flex-wrap: wrap;
+  padding: 8px; background: #faf6ee; border-radius: 6px;
+}
+.proj-quick-form.active { display: flex; }
+.proj-quick-form input, .proj-quick-form textarea {
+  flex: 1; min-width: 140px; border: 1px solid #d8d0bf;
+  border-radius: 4px; padding: 6px 8px; font-size: 13px; font-family: inherit;
+}
+.proj-quick-form button {
+  background: #6b4226; color: #fff; border: none; border-radius: 4px;
+  padding: 6px 12px; font-size: 12px; cursor: pointer;
+}
+.proj-quick-form .cancel-btn {
+  background: #fff; color: #888; border: 1px solid #d8d0bf;
+}
+.notes-card {
+  background: #fff; border: 1px solid #e5e0d6; border-radius: 8px; padding: 12px;
+}
+.notes-card textarea {
+  width: 100%; min-height: 200px; border: none; outline: none;
+  font-family: inherit; font-size: 14px; resize: vertical;
+  background: transparent; line-height: 1.6;
+}
+.save-status {
+  font-size: 12px; color: #6b4226; text-align: right;
+  margin-top: 4px; height: 16px; transition: opacity 0.3s;
+}
+.export-bar {
+  display: flex; justify-content: flex-end; gap: 8px;
+  margin-top: 18px; padding-top: 14px; border-top: 1px solid #e5e0d6;
+}
+.export-bar button {
+  background: #fff; border: 1px solid #d8d0bf; color: #5a5040;
+  border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer;
+}
+.export-bar button:hover { background: #f0ebe0; }
+.toast {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #2a2a2a; color: #fff; padding: 10px 18px;
+  border-radius: 8px; font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 1000; max-width: 90%; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { background: #842029; }
+@media (max-width: 480px) {
+  .add-form { flex-direction: column; }
+  .add-form input[type="text"], .add-form select { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-icon">🏡</div>
+    <h2>Mökkilista</h2>
+    <p>Syötä PIN-koodi</p>
+    <input type="password" inputmode="numeric" pattern="[0-9]*"
+           id="pin-input" class="pin-input" maxlength="8"
+           placeholder="••••" autocomplete="off" />
+    <button class="login-btn" id="login-btn">Kirjaudu</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+<h1>🏡 Mökki – Mikkeli</h1>
+<p class="subtitle">Tehtävät, projektit, hankinnat ja yhteystiedot</p>
+
+<div class="tabs">
+  <button class="tab active" data-tab="tasks">Tehtävät <span class="badge" id="badge-tasks">0</span></button>
+  <button class="tab" data-tab="projects">Projektit <span class="badge" id="badge-projects">0</span></button>
+  <button class="tab" data-tab="shopping">Hankinnat <span class="badge" id="badge-shopping">0</span></button>
+  <button class="tab" data-tab="contacts">Yhteystiedot &amp; muistiinpanot</button>
+</div>
+
+<!-- TEHTÄVÄT -->
+<div class="section active" id="section-tasks">
+  <div class="add-form">
+    <input type="text" id="task-input" placeholder="Lisää tehtävä..." />
+    <select id="task-who">
+      <option value="">Kuka?</option>
+      <option value="itse">Itse</option>
+      <option value="tero">Tero</option>
+      <option value="muu">Muu</option>
+    </select>
+    <input type="date" id="task-date" />
+    <select id="task-project" data-target="task"></select>
+    <button id="task-add">Lisää</button>
+    <div class="new-proj-row" id="task-newproj-row" style="display:none;">
+      <input type="text" id="task-newproj-name" placeholder="Uuden projektin nimi" />
+      <button type="button" id="task-newproj-create">Luo</button>
+      <button type="button" id="task-newproj-cancel" style="background:#fff; color:#888; border:1px solid #d8d0bf;">Peruuta</button>
+    </div>
+  </div>
+  <div class="list" id="task-list"></div>
+</div>
+
+<!-- PROJEKTIT -->
+<div class="section" id="section-projects">
+  <div class="add-form">
+    <input type="text" id="proj-input" placeholder="Lisää projekti..." />
+    <select id="proj-status">
+      <option value="suunnittelu">Suunnittelu</option>
+      <option value="kaynnissa">Käynnissä</option>
+      <option value="harkinnassa">Harkinnassa</option>
+      <option value="valmis">Valmis</option>
+    </select>
+    <button id="proj-add">Lisää</button>
+  </div>
+  <div class="list" id="proj-list"></div>
+</div>
+
+<!-- HANKINNAT -->
+<div class="section" id="section-shopping">
+  <div class="add-form" style="flex-direction:column; align-items:stretch; gap:8px;">
+    <input type="text" id="shop-input" placeholder="Tuotteen nimi" />
+    <textarea id="shop-info" placeholder="Lisätiedot: linkki tuotteeseen, määrä, hinta, kauppa..." style="min-height:48px; resize:vertical;"></textarea>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <select id="shop-project" data-target="shop" style="flex:1; min-width:160px;"></select>
+      <button id="shop-add">Lisää hankinta</button>
+    </div>
+    <div class="new-proj-row" id="shop-newproj-row" style="display:none;">
+      <input type="text" id="shop-newproj-name" placeholder="Uuden projektin nimi" />
+      <button type="button" id="shop-newproj-create">Luo</button>
+      <button type="button" id="shop-newproj-cancel" style="background:#fff; color:#888; border:1px solid #d8d0bf;">Peruuta</button>
+    </div>
+  </div>
+  <div class="list" id="shop-list"></div>
+</div>
+
+<!-- YHTEYSTIEDOT & MUISTIINPANOT -->
+<div class="section" id="section-contacts">
+  <div class="add-form">
+    <input type="text" id="contact-name" placeholder="Nimi" style="flex:1; min-width:120px" />
+    <input type="text" id="contact-role" placeholder="Rooli" style="flex:1; min-width:140px" />
+    <input type="text" id="contact-phone" placeholder="Puhelin" style="flex:1; min-width:120px" />
+    <button id="contact-add">Lisää</button>
+  </div>
+  <div class="list" id="contact-list" style="margin-bottom:18px"></div>
+
+  <h3 style="font-size:14px; color:#666; margin-bottom:8px; font-weight:600;">📝 Muistiinpanot</h3>
+  <div class="notes-card">
+    <textarea id="notes" placeholder="Vapaita muistiinpanoja..."></textarea>
+  </div>
+  <div class="save-status" id="notes-status"></div>
+</div>
+
+<div class="export-bar">
+  <button id="export-btn">Vie JSON</button>
+  <button id="import-btn">Tuo JSON</button>
+  <input type="file" id="import-file" accept=".json" style="display:none" />
+</div>
+
+<div class="toast" id="toast"></div>
+
+</div><!-- /#app -->
+
+<script>
+// ===== AUTH =====
+const AUTH_KEY = 'mokki-auth-v1';
+const PIN_HASH = '20ee235b5de5b36244da6f9aa1cbdd032a90867ba92276ccc8c38c0d0d57fcec';
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function showApp() {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+async function tryLogin() {
+  const pin = document.getElementById('pin-input').value;
+  const errEl = document.getElementById('login-error');
+  const inputEl = document.getElementById('pin-input');
+  if (!pin) return;
+  const hash = await sha256(pin);
+  if (hash === PIN_HASH) {
+    localStorage.setItem(AUTH_KEY, hash);
+    showApp();
+  } else {
+    errEl.textContent = 'Väärä PIN-koodi.';
+    inputEl.classList.add('error');
+    inputEl.value = '';
+    setTimeout(() => { inputEl.classList.remove('error'); errEl.textContent = ''; }, 1500);
+    inputEl.focus();
+  }
+}
+
+// Check existing auth
+(function() {
+  if (localStorage.getItem(AUTH_KEY) === PIN_HASH) showApp();
+  else document.getElementById('pin-input').focus();
+})();
+
+document.getElementById('login-btn').addEventListener('click', tryLogin);
+document.getElementById('pin-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryLogin();
+});
+
+// ===== APP =====
+const STORAGE_KEY = 'mokki-lista-v1';
+const SCHEMA_VERSION = 3;
+
+const DEFAULT_DATA = {
+  _v: SCHEMA_VERSION,
+  tasks: [
+    { id: 1, text: 'Mitata autokatos (leveys, pituus, korkeus)', who: 'itse', date: '', done: false, projectId: 1 },
+    { id: 2, text: 'Tyhjentää autotalli', who: 'itse', date: '2026-04-27', done: false, projectId: 2 },
+    { id: 3, text: 'Päätös Timburg E12 -aitan hankkimisesta', who: 'itse', date: '', done: false, projectId: 3 },
+    { id: 4, text: 'Reolink-kameroiden asennus loppuun', who: 'itse', date: '', done: false, projectId: 4 }
+  ],
+  projects: [
+    { id: 1, text: 'Autokatos → varasto', notes: 'Rakennetaan taka-, sivu- ja etuseinä sekä ovi. Runko ja katto valmiina. Tero aloittaa 20.4.', status: 'kaynnissa' },
+    { id: 2, text: 'Autotalli → työkaluverstas', notes: 'Sähköt valmiina. Betonilattia n. 18 m² (3×6 m). Pohjatyöt + valmisbetonivalu. Autotalli tyhjennetään vkl 24.-27.4.', status: 'kaynnissa' },
+    { id: 3, text: 'Timburg E12 -aitta', notes: 'https://www.taloon.com/elementtivarasto-timburg-e12-aitta-6040x3180-mm-19-21-m-puuvalmis', status: 'harkinnassa' },
+    { id: 4, text: 'Reolink-kamerajärjestelmä', notes: 'NVS8 + Duo 3 PoE + RLC-510WA + Argus 3 Pro. Asennus kesken.', status: 'kaynnissa' }
+  ],
+  shopping: [
+    { id: 1, text: 'Fiskars Xact rikkaruohonpoistaja', info: 'Pitkävartinen voikukka- ja lupiinipoistin, jalalla painettava.\nhttps://www.motonet.fi/tuote/fiskars-xact-rikkaruohonpoistaja?product=38-9769', done: false, projectId: null }
+  ],
+  contacts: [
+    { id: 1, name: 'Tero', role: 'Mökkitalkkari', phone: '' }
+  ],
+  notes: ''
+};
+
+let data = loadData();
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return migrate(JSON.parse(raw));
+  } catch (e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+
+function migrate(d) {
+  const v = d._v || 1;
+  if (v < 2) {
+    if (Array.isArray(d.shopping)) {
+      d.shopping.forEach(s => {
+        if (s.qty !== undefined && s.info === undefined) s.info = s.qty || '';
+        if (s.qty !== undefined) delete s.qty;
+        if (s.info === undefined) s.info = '';
+      });
+    }
+    d._v = 2;
+  }
+  if ((d._v || 2) < 3) {
+    if (Array.isArray(d.tasks)) d.tasks.forEach(t => { if (t.projectId === undefined) t.projectId = null; });
+    if (Array.isArray(d.shopping)) d.shopping.forEach(s => { if (s.projectId === undefined) s.projectId = null; });
+    d._v = 3;
+  }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch (e) {}
+  return d;
+}
+
+function saveData() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+  catch (e) { console.error('Save failed', e); }
+}
+
+function nextId(list) {
+  return list.length ? Math.max(...list.map(i => i.id || 0)) + 1 : 1;
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s || '';
+  return div.innerHTML;
+}
+
+function linkify(text) {
+  return escapeHtml(text).replace(
+    /(https?:\/\/[^\s]+)/g,
+    '<a href="$1" target="_blank" rel="noopener">$1</a>'
+  );
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const parts = d.split('-');
+  if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+  return d;
+}
+
+function getProject(id) {
+  if (!id) return null;
+  return data.projects.find(p => p.id === id) || null;
+}
+
+function getLinkedTasks(projectId) {
+  return data.tasks.filter(t => t.projectId === projectId);
+}
+
+function getLinkedShopping(projectId) {
+  return data.shopping.filter(s => s.projectId === projectId);
+}
+
+// ===== TOAST =====
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function showToast(msg, isError) {
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', !!isError);
+  toastEl.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+}
+
+// ===== PROJEKTI-VALITSIN =====
+function refreshProjectSelects() {
+  document.querySelectorAll('select[data-target]').forEach(sel => {
+    const current = sel.value;
+    const options = ['<option value="">(Ei projektia)</option>']
+      .concat(data.projects.map(p =>
+        `<option value="${p.id}">${escapeHtml(p.text)}</option>`))
+      .concat(['<option value="__new__">+ Luo uusi projekti...</option>']);
+    sel.innerHTML = options.join('');
+    if (current && current !== '__new__') sel.value = current;
+  });
+}
+
+function setupProjectSelectHandlers(selectId, newRowId, nameInputId, createBtnId, cancelBtnId) {
+  const sel = document.getElementById(selectId);
+  const row = document.getElementById(newRowId);
+  const nameInput = document.getElementById(nameInputId);
+  const createBtn = document.getElementById(createBtnId);
+  const cancelBtn = document.getElementById(cancelBtnId);
+
+  sel.addEventListener('change', () => {
+    if (sel.value === '__new__') {
+      row.style.display = 'flex';
+      nameInput.value = '';
+      nameInput.focus();
+    }
+  });
+
+  createBtn.addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    const newProj = { id: nextId(data.projects), text: name, notes: '', status: 'suunnittelu' };
+    data.projects.push(newProj);
+    saveData();
+    refreshProjectSelects();
+    sel.value = String(newProj.id);
+    row.style.display = 'none';
+    renderProjects();
+    showToast('Projekti luotu: ' + name);
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    row.style.display = 'none';
+    sel.value = '';
+  });
+
+  nameInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); createBtn.click(); }
+    else if (e.key === 'Escape') cancelBtn.click();
+  });
+}
+
+setupProjectSelectHandlers('task-project', 'task-newproj-row', 'task-newproj-name', 'task-newproj-create', 'task-newproj-cancel');
+setupProjectSelectHandlers('shop-project', 'shop-newproj-row', 'shop-newproj-name', 'shop-newproj-create', 'shop-newproj-cancel');
+
+// ===== TEHTÄVÄT =====
+function renderTasks() {
+  const list = document.getElementById('task-list');
+  if (!data.tasks.length) {
+    list.innerHTML = '<div class="empty">Ei tehtäviä. Lisää ensimmäinen yllä olevasta kentästä.</div>';
+  } else {
+    const sorted = [...data.tasks].sort((a, b) => {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      if (a.date && b.date) return a.date.localeCompare(b.date);
+      if (a.date) return -1;
+      if (b.date) return 1;
+      return 0;
+    });
+    list.innerHTML = sorted.map(t => {
+      const who = t.who ? `<span class="tag ${t.who}">${t.who === 'itse' ? 'Itse' : t.who === 'tero' ? 'Tero' : 'Muu'}</span>` : '';
+      const date = t.date ? `<span>📅 ${fmtDate(t.date)}</span>` : '';
+      const proj = getProject(t.projectId);
+      const projTag = proj ? `<a class="tag proj" data-jump-proj="${proj.id}">📁 ${escapeHtml(proj.text)}</a>` : '';
+      const meta = (who || date || projTag) ? `<div class="item-meta">${who}${date}${projTag}</div>` : '';
+      return `
+        <div class="item ${t.done ? 'done' : ''}">
+          <input type="checkbox" class="checkbox" data-id="${t.id}" ${t.done ? 'checked' : ''}>
+          <div class="item-body">
+            <div class="item-title">${escapeHtml(t.text)}</div>
+            ${meta}
+          </div>
+          <button class="del-btn" data-id="${t.id}" title="Poista">✕</button>
+        </div>
+      `;
+    }).join('');
+  }
+  document.getElementById('badge-tasks').textContent = data.tasks.filter(t => !t.done).length;
+}
+
+document.getElementById('task-add').addEventListener('click', () => {
+  const input = document.getElementById('task-input');
+  const who = document.getElementById('task-who');
+  const date = document.getElementById('task-date');
+  const proj = document.getElementById('task-project');
+  const text = input.value.trim();
+  if (!text) return;
+  const projectId = (proj.value && proj.value !== '__new__') ? parseInt(proj.value) : null;
+  data.tasks.push({ id: nextId(data.tasks), text, who: who.value, date: date.value, done: false, projectId });
+  input.value = ''; who.value = ''; date.value = ''; proj.value = '';
+  saveData(); renderTasks(); renderProjects();
+  input.focus();
+});
+
+document.getElementById('task-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('task-add').click();
+});
+
+document.getElementById('task-list').addEventListener('click', e => {
+  const jumpId = e.target.dataset.jumpProj;
+  if (jumpId) {
+    switchTab('projects');
+    setTimeout(() => {
+      const el = document.querySelector(`[data-proj-anchor="${jumpId}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+    return;
+  }
+  const id = parseInt(e.target.dataset.id);
+  if (!id) return;
+  if (e.target.classList.contains('checkbox')) {
+    const t = data.tasks.find(x => x.id === id);
+    if (t) { t.done = e.target.checked; saveData(); renderTasks(); renderProjects(); }
+  } else if (e.target.classList.contains('del-btn')) {
+    if (confirm('Poistetaanko tehtävä?')) {
+      data.tasks = data.tasks.filter(x => x.id !== id);
+      saveData(); renderTasks(); renderProjects();
+    }
+  }
+});
+
+// ===== PROJEKTIT =====
+const STATUS_LABELS = { suunnittelu: 'Suunnittelu', kaynnissa: 'Käynnissä', harkinnassa: 'Harkinnassa', valmis: 'Valmis' };
+const STATUS_COLORS = { suunnittelu: 'soon', kaynnissa: 'tero', harkinnassa: '', valmis: 'itse' };
+
+function renderProjects() {
+  const list = document.getElementById('proj-list');
+  if (!data.projects.length) {
+    list.innerHTML = '<div class="empty">Ei projekteja vielä.</div>';
+  } else {
+    list.innerHTML = data.projects.map(p => {
+      const linkedTasks = getLinkedTasks(p.id);
+      const linkedShop = getLinkedShopping(p.id);
+      const tasksHtml = linkedTasks.length ? `
+        <div class="proj-linked-section">
+          <div class="proj-linked-label">Tehtävät (${linkedTasks.filter(t => !t.done).length}/${linkedTasks.length})</div>
+          ${linkedTasks.map(t => `
+            <div class="linked-item ${t.done ? 'done' : ''}">
+              <input type="checkbox" data-link-task="${t.id}" ${t.done ? 'checked' : ''}>
+              <span class="linked-text">${escapeHtml(t.text)}${t.date ? ` <span style="color:#aaa; font-size:11px;">(${fmtDate(t.date)})</span>` : ''}</span>
+              <button class="linked-jump" data-jump-task="${t.id}">→</button>
+            </div>
+          `).join('')}
+        </div>` : '';
+      const shopHtml = linkedShop.length ? `
+        <div class="proj-linked-section">
+          <div class="proj-linked-label">Hankinnat (${linkedShop.filter(s => !s.done).length}/${linkedShop.length})</div>
+          ${linkedShop.map(s => `
+            <div class="linked-item ${s.done ? 'done' : ''}">
+              <input type="checkbox" data-link-shop="${s.id}" ${s.done ? 'checked' : ''}>
+              <span class="linked-text">${escapeHtml(s.text)}</span>
+              <button class="linked-jump" data-jump-shop="${s.id}">→</button>
+            </div>
+          `).join('')}
+        </div>` : '';
+      const linkedBlock = (linkedTasks.length || linkedShop.length) ? `<div class="proj-linked">${tasksHtml}${shopHtml}</div>` : '';
+      return `
+        <div class="item" data-proj-anchor="${p.id}">
+          <div class="item-body">
+            <div class="item-title">${escapeHtml(p.text)}</div>
+            <div class="item-meta"><span class="tag ${STATUS_COLORS[p.status]||''}">${STATUS_LABELS[p.status]||p.status}</span></div>
+            ${p.notes ? `<div class="item-notes">${linkify(p.notes)}</div>` : ''}
+            <textarea class="proj-notes-edit" data-id="${p.id}" placeholder="Muistiinpanot, mitat, materiaalit..." style="display:none; width:100%; margin-top:6px; min-height:60px; border:1px solid #d8d0bf; border-radius:4px; padding:6px; font-family:inherit; font-size:13px;">${escapeHtml(p.notes||'')}</textarea>
+            <button class="edit-proj" data-id="${p.id}" style="font-size:11px; background:none; border:none; color:#888; cursor:pointer; margin-top:4px; padding:0;">✎ muokkaa muistiinpanoja</button>
+            ${linkedBlock}
+            <div class="proj-quick-add">
+              <button data-quick-task="${p.id}">+ Tehtävä</button>
+              <button data-quick-shop="${p.id}">+ Hankinta</button>
+            </div>
+            <div class="proj-quick-form" data-quick-form-task="${p.id}">
+              <input type="text" placeholder="Tehtävän nimi" data-quick-task-input="${p.id}" />
+              <button data-quick-task-create="${p.id}">Lisää</button>
+              <button class="cancel-btn" data-quick-task-cancel="${p.id}">×</button>
+            </div>
+            <div class="proj-quick-form" data-quick-form-shop="${p.id}">
+              <input type="text" placeholder="Hankinnan nimi" data-quick-shop-input="${p.id}" />
+              <input type="text" placeholder="Lisätiedot (esim. linkki)" data-quick-shop-info="${p.id}" />
+              <button data-quick-shop-create="${p.id}">Lisää</button>
+              <button class="cancel-btn" data-quick-shop-cancel="${p.id}">×</button>
+            </div>
+          </div>
+          <button class="del-btn" data-id="${p.id}" title="Poista projekti">✕</button>
+        </div>
+      `;
+    }).join('');
+  }
+  document.getElementById('badge-projects').textContent =
+    data.projects.filter(p => p.status === 'kaynnissa' || p.status === 'suunnittelu').length;
+}
+
+document.getElementById('proj-add').addEventListener('click', () => {
+  const input = document.getElementById('proj-input');
+  const status = document.getElementById('proj-status');
+  const text = input.value.trim();
+  if (!text) return;
+  data.projects.push({ id: nextId(data.projects), text, notes: '', status: status.value });
+  input.value = '';
+  saveData(); refreshProjectSelects(); renderProjects();
+});
+
+document.getElementById('proj-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('proj-add').click();
+});
+
+document.getElementById('proj-list').addEventListener('click', e => {
+  const t = e.target;
+  const linkTaskId = parseInt(t.dataset.linkTask);
+  if (linkTaskId) { const task = data.tasks.find(x => x.id === linkTaskId); if (task) { task.done = t.checked; saveData(); renderProjects(); renderTasks(); } return; }
+  const linkShopId = parseInt(t.dataset.linkShop);
+  if (linkShopId) { const s = data.shopping.find(x => x.id === linkShopId); if (s) { s.done = t.checked; saveData(); renderProjects(); renderShopping(); } return; }
+  const jumpTaskId = parseInt(t.dataset.jumpTask);
+  if (jumpTaskId) { switchTab('tasks'); return; }
+  const jumpShopId = parseInt(t.dataset.jumpShop);
+  if (jumpShopId) { switchTab('shopping'); return; }
+  const quickTaskBtn = t.dataset.quickTask;
+  if (quickTaskBtn) { const form = document.querySelector(`[data-quick-form-task="${quickTaskBtn}"]`); form.classList.toggle('active'); if (form.classList.contains('active')) form.querySelector('input').focus(); return; }
+  const quickShopBtn = t.dataset.quickShop;
+  if (quickShopBtn) { const form = document.querySelector(`[data-quick-form-shop="${quickShopBtn}"]`); form.classList.toggle('active'); if (form.classList.contains('active')) form.querySelector('input').focus(); return; }
+  const taskCreateId = parseInt(t.dataset.quickTaskCreate);
+  if (taskCreateId) { const inp = document.querySelector(`[data-quick-task-input="${taskCreateId}"]`); const text = inp.value.trim(); if (!text) { inp.focus(); return; } data.tasks.push({ id: nextId(data.tasks), text, who: '', date: '', done: false, projectId: taskCreateId }); inp.value = ''; saveData(); renderTasks(); renderProjects(); showToast('Tehtävä lisätty projektiin'); return; }
+  const taskCancelId = parseInt(t.dataset.quickTaskCancel);
+  if (taskCancelId) { document.querySelector(`[data-quick-form-task="${taskCancelId}"]`).classList.remove('active'); return; }
+  const shopCreateId = parseInt(t.dataset.quickShopCreate);
+  if (shopCreateId) { const inp = document.querySelector(`[data-quick-shop-input="${shopCreateId}"]`); const infoInp = document.querySelector(`[data-quick-shop-info="${shopCreateId}"]`); const text = inp.value.trim(); if (!text) { inp.focus(); return; } data.shopping.push({ id: nextId(data.shopping), text, info: infoInp.value.trim(), done: false, projectId: shopCreateId }); inp.value = ''; infoInp.value = ''; saveData(); renderShopping(); renderProjects(); showToast('Hankinta lisätty projektiin'); return; }
+  const shopCancelId = parseInt(t.dataset.quickShopCancel);
+  if (shopCancelId) { document.querySelector(`[data-quick-form-shop="${shopCancelId}"]`).classList.remove('active'); return; }
+  const id = parseInt(t.dataset.id);
+  if (!id) return;
+  if (t.classList.contains('del-btn')) {
+    const linkedT = getLinkedTasks(id).length;
+    const linkedS = getLinkedShopping(id).length;
+    let msg = 'Poistetaanko projekti?';
+    if (linkedT || linkedS) msg = `Projektissa on ${linkedT} tehtävää ja ${linkedS} hankintaa. Poistetaanko projekti? (Tehtävät ja hankinnat säilyvät, mutta linkitys katoaa.)`;
+    if (confirm(msg)) {
+      data.tasks.forEach(t => { if (t.projectId === id) t.projectId = null; });
+      data.shopping.forEach(s => { if (s.projectId === id) s.projectId = null; });
+      data.projects = data.projects.filter(x => x.id !== id);
+      saveData(); refreshProjectSelects(); renderProjects(); renderTasks(); renderShopping();
+    }
+  } else if (t.classList.contains('edit-proj')) {
+    const ta = t.parentElement.querySelector('.proj-notes-edit');
+    const isHidden = ta.style.display === 'none';
+    if (isHidden) { ta.style.display = 'block'; t.textContent = '✓ tallenna'; ta.focus(); }
+    else { const p = data.projects.find(x => x.id === id); if (p) { p.notes = ta.value; saveData(); renderProjects(); } }
+  }
+});
+
+document.getElementById('proj-list').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const taskInput = e.target.dataset.quickTaskInput;
+  if (taskInput) { e.preventDefault(); document.querySelector(`[data-quick-task-create="${taskInput}"]`).click(); return; }
+  const shopInput = e.target.dataset.quickShopInput;
+  if (shopInput) { e.preventDefault(); document.querySelector(`[data-quick-shop-info="${shopInput}"]`).focus(); return; }
+  const shopInfo = e.target.dataset.quickShopInfo;
+  if (shopInfo) { e.preventDefault(); document.querySelector(`[data-quick-shop-create="${shopInfo}"]`).click(); return; }
+});
+
+// ===== HANKINNAT =====
+function renderShopping() {
+  const list = document.getElementById('shop-list');
+  if (!data.shopping.length) {
+    list.innerHTML = '<div class="empty">Ei hankintoja listalla.</div>';
+  } else {
+    list.innerHTML = data.shopping.map(s => {
+      const proj = getProject(s.projectId);
+      const projTag = proj ? `<a class="tag proj" data-jump-proj="${proj.id}">📁 ${escapeHtml(proj.text)}</a>` : '';
+      return `
+        <div class="item ${s.done ? 'done' : ''}">
+          <input type="checkbox" class="checkbox" data-id="${s.id}" ${s.done ? 'checked' : ''}>
+          <div class="item-body">
+            <div class="item-title">${escapeHtml(s.text)}</div>
+            ${projTag ? `<div class="item-meta">${projTag}</div>` : ''}
+            ${s.info ? `<div class="item-notes" data-info-view="${s.id}">${linkify(s.info)}</div>` : ''}
+            <textarea class="shop-info-edit" data-id="${s.id}" placeholder="Lisätiedot, linkki..." style="display:none; width:100%; margin-top:6px; min-height:50px; border:1px solid #d8d0bf; border-radius:4px; padding:6px; font-family:inherit; font-size:13px;">${escapeHtml(s.info||'')}</textarea>
+            <button class="edit-shop" data-id="${s.id}" style="font-size:11px; background:none; border:none; color:#888; cursor:pointer; margin-top:4px; padding:0;">✎ ${s.info ? 'muokkaa lisätietoja' : 'lisää lisätietoja'}</button>
+          </div>
+          <button class="del-btn" data-id="${s.id}" title="Poista">✕</button>
+        </div>
+      `;
+    }).join('');
+  }
+  document.getElementById('badge-shopping').textContent = data.shopping.filter(s => !s.done).length;
+}
+
+document.getElementById('shop-add').addEventListener('click', () => {
+  const input = document.getElementById('shop-input');
+  const info = document.getElementById('shop-info');
+  const proj = document.getElementById('shop-project');
+  const text = input.value.trim();
+  if (!text) return;
+  const projectId = (proj.value && proj.value !== '__new__') ? parseInt(proj.value) : null;
+  data.shopping.push({ id: nextId(data.shopping), text, info: info.value.trim(), done: false, projectId });
+  input.value = ''; info.value = ''; proj.value = '';
+  saveData(); renderShopping(); renderProjects();
+  input.focus();
+});
+
+document.getElementById('shop-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('shop-info').focus(); }
+});
+
+document.getElementById('shop-list').addEventListener('click', e => {
+  const jumpId = e.target.dataset.jumpProj;
+  if (jumpId) { switchTab('projects'); setTimeout(() => { const el = document.querySelector(`[data-proj-anchor="${jumpId}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50); return; }
+  const id = parseInt(e.target.dataset.id);
+  if (!id) return;
+  if (e.target.classList.contains('checkbox')) { const s = data.shopping.find(x => x.id === id); if (s) { s.done = e.target.checked; saveData(); renderShopping(); renderProjects(); } }
+  else if (e.target.classList.contains('del-btn')) { data.shopping = data.shopping.filter(x => x.id !== id); saveData(); renderShopping(); renderProjects(); }
+  else if (e.target.classList.contains('edit-shop')) {
+    const ta = e.target.parentElement.querySelector('.shop-info-edit');
+    const view = e.target.parentElement.querySelector('[data-info-view]');
+    const isHidden = ta.style.display === 'none';
+    if (isHidden) { if (view) view.style.display = 'none'; ta.style.display = 'block'; e.target.textContent = '✓ tallenna'; ta.focus(); }
+    else { const s = data.shopping.find(x => x.id === id); if (s) { s.info = ta.value; saveData(); renderShopping(); } }
+  }
+});
+
+// ===== YHTEYSTIEDOT =====
+function renderContacts() {
+  const list = document.getElementById('contact-list');
+  if (!data.contacts.length) {
+    list.innerHTML = '<div class="empty">Ei yhteystietoja.</div>';
+  } else {
+    list.innerHTML = data.contacts.map(c => `
+      <div class="item">
+        <div class="item-body">
+          <div class="item-title">${escapeHtml(c.name)} ${c.role ? `<span style="font-weight:400; color:#888; font-size:13px;">— ${escapeHtml(c.role)}</span>` : ''}</div>
+          ${c.phone ? `<div class="item-meta"><span>📞 <a href="tel:${escapeHtml(c.phone)}" style="color:#6b4226; text-decoration:none;">${escapeHtml(c.phone)}</a></span></div>` : ''}
+        </div>
+        <button class="del-btn" data-id="${c.id}" title="Poista">✕</button>
+      </div>
+    `).join('');
+  }
+}
+
+document.getElementById('contact-add').addEventListener('click', () => {
+  const name = document.getElementById('contact-name');
+  const role = document.getElementById('contact-role');
+  const phone = document.getElementById('contact-phone');
+  if (!name.value.trim()) return;
+  data.contacts.push({ id: nextId(data.contacts), name: name.value.trim(), role: role.value.trim(), phone: phone.value.trim() });
+  name.value = ''; role.value = ''; phone.value = '';
+  saveData(); renderContacts();
+});
+
+document.getElementById('contact-list').addEventListener('click', e => {
+  const id = parseInt(e.target.dataset.id);
+  if (!id) return;
+  if (e.target.classList.contains('del-btn')) {
+    if (confirm('Poistetaanko yhteystieto?')) { data.contacts = data.contacts.filter(x => x.id !== id); saveData(); renderContacts(); }
+  }
+});
+
+// ===== MUISTIINPANOT =====
+const notesEl = document.getElementById('notes');
+const notesStatus = document.getElementById('notes-status');
+notesEl.value = data.notes || '';
+let notesTimer = null;
+notesEl.addEventListener('input', () => {
+  data.notes = notesEl.value;
+  if (notesTimer) clearTimeout(notesTimer);
+  notesStatus.textContent = '';
+  notesTimer = setTimeout(() => {
+    saveData();
+    notesStatus.textContent = '✓ Tallennettu';
+    setTimeout(() => { notesStatus.textContent = ''; }, 1500);
+  }, 400);
+});
+
+// ===== TABS =====
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const tab = document.querySelector(`.tab[data-tab="${name}"]`);
+  if (tab) tab.classList.add('active');
+  const sec = document.getElementById('section-' + name);
+  if (sec) sec.classList.add('active');
+}
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+// ===== EXPORT / IMPORT =====
+document.getElementById('export-btn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mokkilista-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('import-btn').addEventListener('click', () => {
+  document.getElementById('import-file').click();
+});
+
+document.getElementById('import-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (confirm('Korvataanko nykyiset tiedot tuoduilla?')) {
+        data = migrate(imported);
+        saveData(); refreshProjectSelects(); renderAll();
+        notesEl.value = data.notes || '';
+      }
+    } catch (err) { alert('Virhe tiedoston lukemisessa: ' + err.message); }
+  };
+  reader.readAsText(file);
+});
+
+function renderAll() {
+  refreshProjectSelects();
+  renderTasks();
+  renderProjects();
+  renderShopping();
+  renderContacts();
+}
+
+renderAll();
+</script>
+</body>
+</html>
