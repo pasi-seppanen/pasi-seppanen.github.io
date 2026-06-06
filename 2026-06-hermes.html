@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ideas for James — Pasi Seppanen</title>
+  <title>Hermes auto-trader — Pasi Seppanen</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -17,9 +17,15 @@
       --nav-bg: #2a6b4f;
     }
     body { font-family: 'Georgia', serif; background: var(--bg); color: var(--text); line-height: 1.8; }
+    .topbar { background: var(--accent-light); border-bottom: 1px solid var(--border); text-align: center; padding: 0.5rem 1rem; font-family: 'Courier New', monospace; font-size: 0.78rem; color: var(--accent); letter-spacing: 0.04em; }
     nav.main-nav { background: var(--bg); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 100; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 60px; }
     .nav-logo { font-size: 1.2rem; font-weight: normal; color: var(--accent); text-decoration: none; letter-spacing: -0.01em; }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a { font-family: 'Courier New', monospace; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); text-decoration: none; border-bottom: 2px solid transparent; padding-bottom: 2px; transition: color 0.2s, border-color 0.2s; }
+    .nav-links a:hover { color: var(--accent); border-color: var(--accent); }
     .cat-strip { background: var(--accent-light); border-bottom: 1px solid var(--border); display: flex; justify-content: center; gap: 3rem; padding: 0.9rem 2rem; }
+    .cat-strip a { font-family: 'Courier New', monospace; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; padding-bottom: 2px; transition: border-color 0.2s; }
+    .cat-strip a:hover { border-color: var(--accent); }
     .page-wrap { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem; display: grid; grid-template-columns: 1fr 300px; gap: 4rem; align-items: start; }
     .byline { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
     .byline-avatar { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: var(--accent-light); border: 2px solid var(--border); }
@@ -31,10 +37,17 @@
     .article-body h2 { font-size: 1.5rem; font-style: italic; font-weight: normal; color: var(--accent); margin: 2.5rem 0 1rem; }
     .article-body ul { margin: 0 0 1.5rem 1.25rem; }
     .article-body li { margin-bottom: 0.6rem; }
+    blockquote { border-left: 4px solid var(--accent); padding-left: 1rem; margin: 1.5rem 0; color: #444; font-style: italic; }
     .article-sign { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-family: 'Courier New', monospace; font-size: 0.82rem; color: var(--muted); }
+    .sidebar { display: flex; flex-direction: column; gap: 2rem; }
+    .sidebar-box { background: white; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .sidebar-box-title { background: var(--accent); color: white; font-family: 'Courier New', monospace; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.6rem 1rem; }
+    .sidebar-box-body { padding: 1rem; }
+    .sidebar-box-body p { font-size: 0.9rem; color: #555; line-height: 1.6; }
     footer { background: var(--accent); color: rgba(255,255,255,0.7); padding: 2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
     footer p { font-family: 'Courier New', monospace; font-size: 0.78rem; }
-    @media (max-width: 740px) { .page-wrap { grid-template-columns: 1fr; gap: 2rem; } }
+    footer a { color: white; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.4); }
+    @media (max-width: 740px) { .page-wrap { grid-template-columns: 1fr; gap: 2rem; } .nav-links { display: none; } .cat-strip { gap: 1.2rem; flex-wrap: wrap; } }
   </style>
 </head>
 <body>
@@ -50,80 +63,66 @@
       <div class="byline-avatar">
         <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg"><rect width="52" height="52" fill="#c8e6d8"/><circle cx="26" cy="20" r="10" fill="#2a6b4f" opacity="0.6"/></svg>
       </div>
-      <div class="byline-text"><strong>Pasi Seppanen</strong>Notes compiled June 2026 · <a href="mailto:pasi@seppanen.eu" style="color:var(--accent)">pasi@seppanen.eu</a></div>
+      <div class="byline-text"><strong>Pasi Seppanen</strong>June 2026 · <a href="mailto:pasi@seppanen.eu" style="color:var(--accent)">pasi@seppanen.eu</a></div>
     </div>
 
-    <h1 class="article-title">Ideas for James (Hermes-Agent on the Helsinki VPS)</h1>
+    <h1 class="article-title">How Hermes became a morning report on a Helsinki VPS</h1>
 
     <div class="article-meta"><span>June 2026</span><span>6 min read</span><span>Technology</span></div>
 
     <div class="article-body">
 
-      <p><em>Compiled June 2026 from Nous Research docs and the community ecosystem. Tailored to your stack: always-on Hermes service, GPT-5.5 (Pro), Docker-isolated tools, Telegram control. The auto-trader is already your first workload.</em></p>
+      <p>Today I wrapped the Hermes auto-trader experiment into a usable, repeatable setup. This is the story of the day I took a Claude-driven agent, a paper-trading strategy, and a hardened VPS and made them work together on a schedule.</p>
 
-      <h2>The thing that makes James different</h2>
-      <p>Most "agents" answer. James is built around a <strong>learning loop</strong>: it creates skills from experience, refines them as it uses them, nudges itself to persist what it learns, searches its own past conversations, and builds a model of you across sessions. So the best ideas below aren't one-off tasks — they're recurring workflows that get <em>better</em> the longer James runs. The pattern is almost always the same: <strong>channel (Telegram) + a skill + a cron schedule + isolated session.</strong></p>
+      <blockquote>"An autonomy experiment: a self-hosted Hermes Agent running a deterministic momentum paper-trading strategy on a virtual 300 USDT budget, controlled via Telegram, on a hardened VPS. Goal was 'can an agent run a real strategy on its own?' — yes; it now trades on a schedule and reports each morning."</blockquote>
 
-      <h2>Start here — low-stakes, high-feedback (given what you already have)</h2>
-      <p>Since the auto-trader already runs on a 15-min cron, you've proven the schedule→skill→Telegram loop. The fastest wins from here:</p>
+      <h2>What I built</h2>
+      <p>The project is not just code. It is the environment, the safety fences, and the way the agent is allowed to act. The technical stack today looks like this:</p>
       <ul>
-        <li><strong>Daily portfolio digest.</strong> Wrap your <code>trade.py report</code> in a cron that posts a plain-language morning summary (equity, return %, holdings, any halts) to Telegram.</li>
-        <li><strong>Morning briefing.</strong> Weather + calendar + today's tasks + a few headlines, assembled into one Telegram message before you open the laptop.</li>
-        <li><strong>Inbox digest.</strong> Every morning James summarizes email, extracts action items, and sends a clean briefing to Telegram.</li>
-        <li><strong>Crypto/tech news triage.</strong> Search news on a schedule (e.g. 3×/day), categorize by urgency, and route to a Telegram topic or Discord channel.</li>
+        <li><strong>Host:</strong> Hetzner Cloud CPX32 in Helsinki, Ubuntu 26.04 LTS, user <code>hermes</code>, SSH key-only access.</li>
+        <li><strong>Hardening:</strong> ufw open only to OpenSSH, fail2ban running, unattended-upgrades enabled.</li>
+        <li><strong>Tool runtime:</strong> Docker with <code>nikolaik/python-nodejs:python3.11-nodejs20</code>, the Hermes skill runs in a container, not on the host.</li>
+        <li><strong>Agent:</strong> Hermes installed under <code>~/.hermes</code>, managed by the user systemd service <code>hermes-gateway</code> with linger enabled so it survives logout and reboot.</li>
+        <li><strong>Model:</strong> GPT-5.5 via OpenAI Codex OAuth, using my ChatGPT Pro account rather than a raw API key.</li>
+        <li><strong>Channel:</strong> Telegram bot “James” (@HermesAgentForUs_bot), locked to my personal Telegram user and a private home channel.</li>
       </ul>
 
-      <h2>Research &amp; knowledge (compounds over time)</h2>
+      <h2>The actual trade guardrail</h2>
+      <p>Most of the work was not writing the strategy. It was deciding what the agent is allowed to do.</p>
+      <blockquote>"The agent (James) is READ-ONLY re: trading — on request it runs status/report. It must never run <code>trade.py run</code> (the cron owns trading)."</blockquote>
+      <p>That line is the core of the experiment. James can answer questions, summarize position state, and explain the strategy. The live execution path is separate and deterministic.</p>
+
+      <h2>The auto-trader itself</h2>
+      <p>The trading skill lives under <code>~/.hermes/skills/finance/auto-trader</code>, with local source of truth in <code>hermes-auto-trader/</code>. The strategy is simple, explicit and paper-only:</p>
       <ul>
-        <li><strong>Paper/citation tracker.</strong> James reads papers, tracks citations, organizes findings, and builds a persistent knowledge graph of a domain.</li>
-        <li><strong>Chat with your notes.</strong> Auto-contextualize new findings against an Obsidian/Markdown vault; ask questions of your own knowledge base.</li>
-        <li><strong>Topic-isolated sessions.</strong> Telegram "Topics" mode gives each topic its own session. Wire an "Engineering" topic to a dev skill, a "Research" topic to an arXiv skill, a "Trading" topic to the auto-trader.</li>
+        <li>Universe: top 20 USDT pairs by 24h volume, excluding stablecoins and leveraged tokens.</li>
+        <li>BUY after 2 consecutive higher 15-minute rounds, position size = 20% of available cash.</li>
+        <li>ADD when a held coin goes green again, using another 20% of free cash.</li>
+        <li>SELL the whole position after one red 15-minute round.</li>
+        <li>Budget: 300 USDT; daily loss cutoff 30 USDT (buys stop, sells still happen).</li>
+      </ul>
+      <p>The simulation uses real Binance market data and a 0.1%/side fee model. It is a realistic experiment without real money on the line.</p>
+
+      <h2>Automation and the morning report</h2>
+      <p>Once the trading logic was in place, the next step was the schedule:</p>
+      <ul>
+        <li><code>autotrader-run</code> every 15 minutes runs <code>~/.hermes/scripts/autotrader-run.sh</code> and ticks the strategy.</li>
+        <li><code>autotrader-morning</code> at 05:05 UTC (08:05 Helsinki in summer) runs <code>~/.hermes/scripts/autotrader-morning.sh</code>, which in turn runs <code>trade.py report</code> and delivers the result to Telegram.</li>
+      </ul>
+      <p>That hook turned the project from an experiment into a daily habit. Every morning, James sends me a readout I can actually use.</p>
+
+      <h2>What is still unfinished</h2>
+      <p>This is an autonomy experiment, not a deployed fund.</p>
+      <blockquote>"Going live is NOT a config flip. <code>MODE=live</code> is intentionally stubbed in <code>trade.py</code> (raises an error). Real trading needs the live signed-order execution path built + tested, a real funded account, and a trade-only, withdrawals-OFF Binance key."</blockquote>
+      <ul>
+        <li>Fix DST for Finland: change the morning job to 06:05 UTC once summer time ends.</li>
+        <li>Build a plot script around <code>equity_log.jsonl</code> once there is a week of data.</li>
+        <li>Keep the live path separated, with sensible caps and a conservative risk profile if I ever move from paper to real.</li>
       </ul>
 
-      <h2>Monitoring &amp; automation (the VPS's natural strength)</h2>
-      <ul>
-        <li><strong>Price / deal monitoring.</strong> Watch listings, flag mispriced items, alert to Telegram on a cron.</li>
-        <li><strong>Competitor / market watch.</strong> Weekly scrape of rival sites for price and product changes.</li>
-        <li><strong>VPS self-monitoring.</strong> Disk, memory, cert expiry, the Hermes service itself, the trader's cron health — alert if something drifts.</li>
-      </ul>
-
-      <h2>Developer workflows</h2>
-      <ul>
-        <li><strong>Claude Code orchestrator.</strong> Hermes writes prompts for Claude Code over SSH, reviews the output, and routes corrections back — you supervise from Telegram.</li>
-        <li><strong>PR review loop.</strong> James reviews diffs and replies in Telegram with suggestions and a merge verdict.</li>
-        <li><strong>Dependency / security scan.</strong> Weekly check of project deps for updates and CVEs, prioritized.</li>
-        <li><strong>Build from your phone.</strong> Multi-file refactors, CI monitoring, even shipping changes — driven entirely from Telegram chat.</li>
-      </ul>
-
-      <h2>Content &amp; creative</h2>
-      <ul>
-        <li><strong>End-to-end production pipeline.</strong> Drafts, art, TTS narration and a lightweight production workflow.</li>
-        <li><strong>RSS → social.</strong> Connect a feed, auto-generate platform-specific post variations.</li>
-        <li><strong>Video handoff.</strong> Hand James a screen recording, get back a tutorial video with your preferences kept in memory.</li>
-      </ul>
-
-      <h2>Home &amp; mobile control</h2>
-      <ul>
-        <li><strong>Home Assistant.</strong> Built-in tools to list entities, read state, and call services — conversational smart-home control.</li>
-        <li><strong>Remote Android control.</strong> Tools for taps, swipes, screenshots, and screen reading via a relay app — drive your phone from a Hermes chat.</li>
-      </ul>
-
-      <h2>The self-improving / multi-agent end</h2>
-      <ul>
-        <li><strong>Subagents.</strong> Parent agent delegates to isolated child agents running in parallel — real multi-step pipelines.</li>
-        <li><strong>Skill factory.</strong> A meta-skill that auto-generates reusable skills from your repeated workflows.</li>
-        <li><strong>Self-optimization.</strong> A loop that optimizes James's own skills, prompts, and tool text — producing PR-ready improvements.</li>
-      </ul>
-
-      <h2>A note on safety (matters more because it's always-on)</h2>
-      <p>The same tools that make James useful let it read sensitive files (SSH keys, <code>.env</code>, cookies) and run commands as you, 24/7. You've already done the two big things right — Docker isolation and paper-only trading. Keep using approval modes for anything that touches money, credentials, or external accounts, and keep the blast radius contained per skill.</p>
-
-      <h2>Where to browse more</h2>
-      <ul>
-        <li><a href="https://hermes-agent.nousresearch.com/docs/user-stories" target="_blank" rel="noopener">Official user stories &amp; docs (Nous)</a></li>
-        <li><a href="https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/skills-catalog.md" target="_blank" rel="noopener">Built-in skills catalog</a></li>
-        <li><a href="https://github.com/amanning3390/hermeshub" target="_blank" rel="noopener">HermesHub — community skills</a></li>
-      </ul>
+      <h2>Why this felt like progress</h2>
+      <p>Most writing about AI agents focuses on the model. This one felt different because the useful part is the wiring: the host, the container, the service, the Telegram channel, the cron schedule, and the guardrails.</p>
+      <p>It is still an experiment, but it now has a clear narrative: the agent is not the trader, the agent is the assistant that watches, reports, and keeps the system honest.</p>
 
       <div class="article-sign">— Pasi, June 2026 &nbsp;&middot;&nbsp; <a href="mailto:pasi@seppanen.eu" style="color:var(--accent)">pasi@seppanen.eu</a></div>
 
@@ -133,7 +132,7 @@
   <aside class="sidebar">
     <div class="sidebar-box">
       <div class="sidebar-box-title">About</div>
-      <div class="sidebar-box-body about-box"><p>Personal notes by Pasi Seppanen. More texts coming soon — on technology, everyday life, and whatever else catches my attention.<br><br>Reach me at <a href="mailto:pasi@seppanen.eu">pasi@seppanen.eu</a></p></div>
+      <div class="sidebar-box-body about-box"><p>Personal writing by Pasi Seppanen. More texts coming soon — on technology, everyday life, and whatever else catches my attention.<br><br>Reach me at <a href="mailto:pasi@seppanen.eu">pasi@seppanen.eu</a></p></div>
     </div>
   </aside>
 </div>
