@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>I gave my AI a home of its own — Pasi Seppanen</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #faf9f7;
+    --text: #1a1a1a;
+    --muted: #888;
+    --subtle: #f0ede8;
+    --accent: #2a6b4f;
+    --accent-light: #e8f5f0;
+    --border: #e0dbd4;
+    --nav-bg: #2a6b4f;
+  }
+  body { font-family: 'Georgia', serif; background: var(--bg); color: var(--text); line-height: 1.8; }
+  a { color: var(--accent); }
+
+  .topbar {
+    background: var(--accent-light);
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    padding: 0.5rem 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+  }
+  nav.main-nav {
+    background: var(--bg);
+    border-bottom: 2px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px;
+  }
+  nav.main-nav .brand { font-weight: bold; font-size: 1.05rem; color: var(--text); text-decoration: none; }
+  nav.main-nav .links a {
+    font-family: 'Courier New', monospace;
+    font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em;
+    margin-left: 1.4rem; text-decoration: none; color: var(--accent);
+  }
+
+  article { max-width: 720px; margin: 0 auto; padding: 3.5rem 1.5rem 2rem; }
+  .meta {
+    font-family: 'Courier New', monospace; font-size: 0.78rem;
+    color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase;
+    margin-bottom: 1.2rem;
+  }
+  article h1 { font-size: 2.3rem; line-height: 1.25; margin-bottom: 0.6rem; }
+  .byline { color: var(--muted); font-style: italic; font-size: 0.95rem; margin-bottom: 2.4rem; padding-bottom: 1.4rem; border-bottom: 1px solid var(--border); }
+  article h2 { font-size: 1.4rem; margin: 2.6rem 0 0.8rem; color: var(--accent); }
+  article p { margin-bottom: 1.3rem; }
+  article blockquote {
+    margin: 2rem 0; padding: 1rem 1.5rem;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-light);
+    font-style: italic; font-size: 1.15rem; color: var(--text);
+  }
+  .signature { margin-top: 2.5rem; padding-top: 1.4rem; border-top: 1px solid var(--border); color: var(--muted); font-style: italic; }
+
+  .resonate {
+    max-width: 720px; margin: 1rem auto 0; padding: 2rem 1.5rem;
+    text-align: center; border-top: 1px solid var(--border);
+  }
+  .resonate h3 { color: var(--accent); margin-bottom: 0.5rem; }
+  .resonate p { color: var(--muted); margin-bottom: 1rem; }
+  .resonate a.btn {
+    display: inline-block; font-family: 'Courier New', monospace; font-size: 0.82rem;
+    text-decoration: none; color: #fff; background: var(--accent);
+    padding: 0.6rem 1.2rem; border-radius: 4px; letter-spacing: 0.04em;
+  }
+
+  footer { background: var(--subtle); border-top: 1px solid var(--border); margin-top: 2rem; }
+  .footer-inner { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+  footer h4 { font-family: 'Courier New', monospace; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); margin-bottom: 0.8rem; }
+  footer p { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.6rem; }
+  footer ul { list-style: none; margin-bottom: 1.6rem; }
+  footer ul li { margin-bottom: 0.4rem; }
+  footer ul li a { text-decoration: none; }
+  footer ul li span { color: var(--muted); font-size: 0.82rem; font-family: 'Courier New', monospace; }
+  .copyright { color: var(--muted); font-size: 0.8rem; font-family: 'Courier New', monospace; border-top: 1px solid var(--border); padding-top: 1.2rem; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">pasi@seppanen.eu — personal writing</div>
+
+  <nav class="main-nav">
+    <a class="brand" href="/">Pasi Seppanen</a>
+    <span class="links">
+      <a href="/">Home</a>
+      <a href="mailto:pasi@seppanen.eu">Contact</a>
+    </span>
+  </nav>
+
+  <article>
+    <div class="meta">Personal Essay · June 2026 · ~6 min read · Technology · Personal</div>
+    <h1>I gave my AI a home of its own.</h1>
+    <div class="byline">Written by Pasi · pasi@seppanen.eu</div>
+
+    <p>A couple of months ago I ran a large AI model on my MacBook Air, and it spent the whole conversation convinced it lived in Google's data centres. It didn't. It was running on a laptop in my kitchen. The model knew what it <em>was</em> in the abstract, but it had no idea <em>where</em> it actually was.</p>
+
+    <p>This time I did the opposite. I gave an AI a place to live — a small computer that's always on, in a building in Helsinki — and made sure it knew the address. Then I gave it a name, and a way to reach me. The result is the strangest and most useful thing I've built so far, and I'm still working out what it's for.</p>
+
+    <p>Let me explain what I mean, because "I gave an AI a home" sounds like something you'd say before a doctor adjusts your medication.</p>
+
+    <h2>An assistant that doesn't sleep</h2>
+    <p>The AI tools most of us use are things you <em>open</em>. You go to a tab, you type, you get an answer, you close the tab. The assistant doesn't exist in between. It has no memory of you, no presence, nowhere to be. It's a very clever vending machine.</p>
+    <p>What I wanted was different: an assistant that's simply <em>there</em>. Always on. Reachable from my phone wherever I am. Able to do things on its own and tell me about them later — not just answer when spoken to. The technical word for this is an <strong>agent</strong>: not just a chatbot that talks, but a program that can actually <em>do</em> — run tasks, use tools, work on a schedule, and message you when it's done.</p>
+    <p>The catch is that an agent like that needs somewhere to live. A vending machine can sit in a tab. A presence needs a body — a computer that never closes the lid.</p>
+
+    <h2>Two options, one decision</h2>
+    <p>There turned out to be two main ways to run your own personal AI agent. One is a project called OpenClaw (its mascot is a lobster, which tells you something about the spirit of the thing). The other is Hermes Agent, made by a research group called Nous. Both are free, open-source, and run on your own machine rather than someone else's cloud.</p>
+    <p>I spent a while comparing them — the kind of comparison where you make a table and then ignore it and go with your gut. I went with Hermes. The deciding factor was that it's built to <em>learn as it goes</em> and to live anywhere, not just on a laptop. It felt less like a toy and more like something that wanted a permanent address. Which was exactly what I was about to give it.</p>
+
+    <h2>Where should it live?</h2>
+    <p>This was the part I enjoyed most, and it's a question you don't often get to ask: <em>where in the world should my AI live?</em></p>
+    <p>My first instinct was to own it outright. I pictured a Mac Mini humming quietly on my desk, running its own AI model locally — nothing rented, nothing in anyone else's cloud, the whole thing mine. I genuinely loved that idea. The trouble was the bill. To run a properly capable model <em>smoothly</em>, I'd have needed a Mac Mini with around 48 GB of memory — and ideally Apple's newer M5 Pro chip, which, as it happens, isn't even available in the Mac Mini yet. The price climbed out of "fun experiment" and well into "wait, why am I doing this?" So I let the Mac Mini dream go.</p>
+    <p>My laptop couldn't take the job either — it's my work machine, it sleeps the moment I close the lid, and it travels everywhere with me, none of which suits something meant to be always on. So I'd rent instead: a small server that runs around the clock. The technical term is a <strong>VPS</strong>, a "virtual private server," which is a grand name for "a little slice of a big computer that's yours."</p>
+    <p>I could have rented one anywhere. I chose Helsinki. There's a company with a data centre in Finland, and for a few euros a month I could have a small, always-on machine of my own, on Finnish soil, with my data staying in the country. After last time — an AI that didn't know it lived in my kitchen — there was something satisfying about deliberately choosing the address. This one would live in Helsinki, and it would be mine.</p>
+
+    <blockquote>Last time my AI didn't know where it lived. This time I picked the city.</blockquote>
+
+    <h2>Moving in</h2>
+    <p>Setting it up was an afternoon of the now-familiar feeling: describing what I wanted in plain language and watching it happen, with a few honest bumps along the way.</p>
+    <p>There was the usual business of making the little server secure — locking the front door, so to speak, so that the only person who can get in is me. Then installing the agent itself. None of it required me to become a system administrator; I just had to know what I wanted and say so.</p>
+    <p>The bumps were the fun part, because they were so <em>human</em>. At one point the assistant flatly refused to message me — it turned out a chat bot isn't allowed to message you until you've messaged it first, like a polite stranger who won't speak until introduced. Another time I'd accidentally logged in with my <em>work</em> account instead of my personal one, and had to untangle the two. And there was a timezone mix-up that would have had my morning update arriving at eleven in the morning instead of eight, because the server quietly thinks in a different clock than Finland does. Small things. All the texture of building something real rather than something demonstrated.</p>
+
+    <h2>Meet Jeeves</h2>
+    <p>I named him Jeeves — after the impossibly composed valet from <em>Jeeves and Wooster</em>. (If that reference lands for you, I'm sorry to report that neither of us is especially young.)</p>
+    <p>And he plays the part. I asked him to reply in Jeeves's voice, and he does: unfailingly polite, faintly formal, the verbal equivalent of a discreet cough and a "very good, sir." There is something deeply pleasing about a small computer in Helsinki addressing me as though I might, at any moment, require my dinner jacket pressed.</p>
+    <p>I reach Jeeves through Telegram, the messaging app, exactly the way I'd text a person. From my phone, on the sofa, I sent "hello," and a moment later the server in Helsinki replied — politely, of course. It was an oddly warm moment for something so technical.</p>
+    <p>Jeeves's "brain," by the way, is the same top-tier GPT model I already pay for in ChatGPT — I simply pointed my own assistant at the subscription I already have, so there was no second bill to start a conversation with myself in a new place. The intelligence is rented; the <em>home</em>, and the impeccable manners, are mine.</p>
+    <p>So now there's a small machine in Helsinki, awake at all hours, with a capable mind and a name, that I can text from anywhere and that can go off and do things and report back. Which leads to the only question that really matters, and the one I genuinely haven't answered.</p>
+
+    <h2>So… what is it for?</h2>
+    <p>Here's my confession: I built the house before I knew who was going to live in it. I have a capable, always-on assistant with its own address, and I'm not yet sure what I most want it to <em>do</em>.</p>
+    <p>And I think that's the interesting part — so I'll turn it into questions, because I'd honestly like to know what you think.</p>
+    <p>If you had an assistant that was always on and a text away — what's the first genuinely useful, slightly boring thing you'd hand it? The morning summary of your calendar and the weather? Watching a webpage and pinging you when something changes? Quietly tidying your files at 3am?</p>
+    <p>Is the real value in the <em>automation</em> — things happening while you sleep — or simply in having a knowledgeable presence you can message at any hour, without opening a tab?</p>
+    <p>Does it actually matter to you that it lives on hardware you control, in your own country, rather than in someone's giant cloud? Or is that just a romantic notion I've talked myself into?</p>
+    <p>And the uncomfortable one: where's the line between a helpful assistant and a slightly unsettling one? The more access you give it — your messages, your files, your calendar — the more useful it gets, and the more it knows. How much would you be comfortable handing over?</p>
+    <p>I don't have settled answers. What I have is a little server in Helsinki, awake right now, waiting to be told what it's for. If you have a thought — even a small one — I'd love to hear it.</p>
+
+    <div class="signature">— Pasi, June 2026 · <a href="mailto:pasi@seppanen.eu">pasi@seppanen.eu</a></div>
+  </article>
+
+  <section class="resonate">
+    <h3>Did this resonate with you?</h3>
+    <p>If you enjoyed reading this — or have an answer to any of those questions — I'd genuinely love to know. I read everything.</p>
+    <a class="btn" href="mailto:pasi@seppanen.eu?subject=Re:%20I%20gave%20my%20AI%20a%20home">Send a note</a>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <h4>About</h4>
+      <p>Personal writing by Pasi Seppanen — on technology, everyday life, and whatever else catches my attention. Reach me at <a href="mailto:pasi@seppanen.eu">pasi@seppanen.eu</a>.</p>
+      <h4>Recent Posts</h4>
+      <ul>
+        <li><a href="/ai-home.html">I gave my AI a home of its own.</a> <span>June 2026</span></li>
+        <li><a href="/local-ai.html">My local AI had no idea where it lived.</a> <span>April 2026</span></li>
+        <li><a href="/website-ai.html">I asked an AI to build me a website. It actually worked.</a> <span>March 2026</span></li>
+      </ul>
+      <div class="copyright">© 2026 Pasi Seppanen · seppanen.eu</div>
+    </div>
+  </footer>
+
+</body>
+</html>
