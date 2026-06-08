@@ -1,0 +1,11 @@
+# Sensitive — never publish
+github-recovery-codes.txt
+*recovery-codes*
+*.key
+*.pem
+.env
+*.env
+
+# Local editor/history cruft
+.history/
+.DS_Store
