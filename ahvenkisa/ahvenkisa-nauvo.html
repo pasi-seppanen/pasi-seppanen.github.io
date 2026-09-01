@@ -607,10 +607,10 @@
   function formatDate(ts){
     return new Date(ts).toLocaleDateString('fi-FI',{day:'numeric',month:'numeric'});
   }
-  function el(tag, cls, html){
+  function el(tag, cls, text){
     var e = document.createElement(tag);
     if(cls) e.className = cls;
-    if(html!==undefined) e.innerHTML = html;
+    if(text!==undefined) e.textContent = text;
     return e;
   }
   function flashMsg(id, text){
