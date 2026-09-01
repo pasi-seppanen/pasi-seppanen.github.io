@@ -834,7 +834,7 @@
     var byTime = state.catches.slice().sort(function(a,b){ return a.time-b.time; });
     var first = byTime.length ? byTime[0] : null;
     var counts = {};
-    ahven.forEach(function(c){ counts[c.angler] = (counts[c.angler]||0)+1; });
+    state.catches.forEach(function(c){ counts[c.angler] = (counts[c.angler]||0)+1; });
     var mostName=null, mostCount=0;
     Object.keys(counts).forEach(function(name){
       if(counts[name]>mostCount){ mostCount=counts[name]; mostName=name; }
@@ -855,14 +855,14 @@
     var s = sideStats();
 
     wrap.appendChild(statCard(
-      'Pienin ahven',
-      s.smallest ? formatCm(s.smallest.length) : '–',
-      s.smallest ? (s.smallest.angler+' · '+formatTime(s.smallest.time)) : 'Ei vielä kirjattu'
-    ));
-    wrap.appendChild(statCard(
       'Ensimmäinen kala',
       s.first ? formatCm(s.first.length) : '–',
       s.first ? (s.first.angler+(s.first.species!=='Ahven'?' · '+s.first.species:'')+' · '+formatTime(s.first.time)) : 'Ei vielä kirjattu'
+    ));
+    wrap.appendChild(statCard(
+      'Pienin ahven',
+      s.smallest ? formatCm(s.smallest.length) : '–',
+      s.smallest ? (s.smallest.angler+' · '+formatTime(s.smallest.time)) : 'Ei vielä kirjattu'
     ));
     wrap.appendChild(statCard(
       'Suurin ahven',
@@ -870,7 +870,7 @@
       s.largest ? (s.largest.angler+' · '+formatTime(s.largest.time)) : 'Ei vielä kirjattu'
     ));
     wrap.appendChild(statCard(
-      'Ahkerin kalastaja',
+      'Eniten kalaa',
       s.mostName || '–',
       s.mostName ? (s.mostCount+' '+pluralKala(s.mostCount)+' kirjattu') : 'Ei vielä kirjattu'
     ));
