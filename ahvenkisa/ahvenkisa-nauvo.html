@@ -544,12 +544,16 @@
     if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
     return 'c'+Date.now()+'-'+Math.random().toString(36).slice(2,9);
   }
-  function formatCm(n){
+  function formatCmNumber(n){
     var rounded = Math.round(n*10)/10;
     var str = (Math.abs(rounded % 1) < 0.001) ? rounded.toFixed(0) : rounded.toFixed(1);
-    return str.replace('.',',') + ' cm';
+    return str.replace('.',',');
+  }
+  function formatCm(n){
+    return formatCmNumber(n) + ' cm';
   }
   function pluralKala(n){ return n===1 ? 'kala' : 'kalaa'; }
+  function pluralAhven(n){ return n===1 ? 'ahven' : 'ahventa'; }
   function formatTime(ts){
     return new Date(ts).toLocaleTimeString('fi-FI',{hour:'2-digit',minute:'2-digit'});
   }
@@ -788,7 +792,8 @@
     var top = standings[0];
     wrap.innerHTML = '';
     wrap.appendChild(el('div','leaderNum', formatCm(top.sum)));
-    wrap.appendChild(el('div','leaderLabel', top.name + ' johtaa · ' + top.count + ' ' + pluralKala(top.count) + ' kirjattu'));
+    var lengths = top.top.map(function(c){ return formatCmNumber(c.length); }).join(', ');
+    wrap.appendChild(el('div','leaderLabel', top.name + ' johtaa · ' + top.count + ' ' + pluralAhven(top.count) + ' kirjattu (' + lengths + ')'));
   }
   function renderStandings(){
     var indWrap = document.getElementById('individualStandings');
