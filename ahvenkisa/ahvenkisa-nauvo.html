@@ -439,7 +439,7 @@
       <div id="anglerPicker"></div>
 
       <div class="lengthWrap" style="margin-top:14px;">
-        <input type="number" inputmode="decimal" step="0.5" min="0" max="150" id="lengthInput" placeholder="0">
+        <input type="number" inputmode="numeric" step="1" min="0" max="150" id="lengthInput" placeholder="0">
         <span>cm</span>
       </div>
 
@@ -779,7 +779,7 @@
   }
   function updateSaveEnabled(){
     var len = parseFloat(document.getElementById('lengthInput').value);
-    document.getElementById('saveCatchBtn').disabled = !(selectedAngler && len > 0);
+    document.getElementById('saveCatchBtn').disabled = !(selectedAngler && len > 0 && Number.isInteger(len));
   }
 
   // ---------- Photo capture ----------
@@ -841,7 +841,7 @@
   function saveCatch(){
     var lenInput = document.getElementById('lengthInput');
     var len = parseFloat(lenInput.value);
-    if(!selectedAngler || !(len > 0)) return;
+    if(!selectedAngler || !(len > 0) || !Number.isInteger(len)) return;
     var boat = boatOfAngler(selectedAngler);
     var c = {
       id: makeId(),
