@@ -81,11 +81,18 @@
     flex:0 0 auto;
   }
   .leaderRow:first-child .leaderRank{ color: var(--sand); }
+  .leaderBody{
+    flex:1 1 auto;
+    min-width:0;
+  }
   .leaderName{
     font-size: 14.5px;
     font-weight: 600;
-    flex:1 1 auto;
-    min-width:0;
+  }
+  .leaderBreak{
+    font-size: 11.5px;
+    color: rgba(245,240,230,0.6);
+    margin-top: 1px;
   }
   .leaderSum{
     font-family: var(--font-display);
@@ -932,7 +939,11 @@
     standings.forEach(function(s, i){
       var row = el('div','leaderRow');
       row.appendChild(el('div','leaderRank', (i+1)+'.'));
-      row.appendChild(el('div','leaderName', s.name));
+      var body = el('div','leaderBody');
+      body.appendChild(el('div','leaderName', s.name));
+      var lengths = s.top.map(function(c){ return formatCmNumber(c.length); }).join(', ');
+      body.appendChild(el('div','leaderBreak', '(' + lengths + ')'));
+      row.appendChild(body);
       row.appendChild(el('div','leaderSum', formatCm(s.sum)));
       wrap.appendChild(row);
     });
