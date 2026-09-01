@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ahvenkisa">
+<meta name="theme-color" content="#123B3D">
+<title>Ahvenkisa – Nauvo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23123B3D'/%3E%3Cpath d='M3 12c2.5-3.5 6-5.5 10-5.5 4 0 6.5 2 8 5.5-1.5 3.5-4 5.5-8 5.5-4 0-7.5-2-10-5.5z' fill='none' stroke='%23D9B26F' stroke-width='1.6'/%3E%3Ccircle cx='8' cy='11' r='.8' fill='%23D9B26F'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink: #12211F;
+    --deep: #123B3D;
+    --deep-2: #1B4F51;
+    --paper: #F5F0E6;
+    --card: #FFFFFF;
+    --sand: #D9B26F;
+    --valppi: #C97B4A;
+    --nymar: #4A6F8C;
+    --line: rgba(18,33,31,0.12);
+    --muted: #6B7A77;
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family: var(--font-body);
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100dvh;
+    min-height: 100vh;
+    display:flex;
+    flex-direction:column;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, input, select, textarea{ font-family: inherit; }
+  h1,h2,h3{ font-family: var(--font-display); margin:0; }
+  :focus-visible{ outline: 2px solid var(--sand); outline-offset: 2px; }
+
+  header.top{
+    flex: 0 0 auto;
+    background: linear-gradient(160deg, var(--deep), var(--deep-2));
+    color: var(--paper);
+    padding: 18px 20px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  header.top .fishmark{
+    position:absolute;
+    right:-18px;
+    top:-10px;
+    width:150px;
+    height:150px;
+    opacity:0.08;
+    transform: rotate(-8deg);
+  }
+  header.top h1{
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  header.top .sub{
+    margin-top: 4px;
+    font-size: 13px;
+    color: rgba(245,240,230,0.75);
+  }
+  .leaderBanner{
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(245,240,230,0.18);
+  }
+  .leaderNum{
+    font-family: var(--font-display);
+    font-size: 40px;
+    line-height: 1.05;
+    color: var(--sand);
+  }
+  .leaderLabel{
+    font-size: 13.5px;
+    color: rgba(245,240,230,0.85);
+    margin-top: 2px;
+  }
+  .leaderEmpty{
+    font-size: 14px;
+    color: rgba(245,240,230,0.8);
+    padding: 2px 0 4px;
+  }
+
+  main{
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 18px 16px calc(96px + env(safe-area-inset-bottom));
+    max-width: 520px;
+    width:100%;
+    margin: 0 auto;
+  }
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  section.block{ margin-bottom: 26px; }
+  section.block h2{
+    font-size: 19px;
+    margin-bottom: 10px;
+  }
+  section.block .hint{
+    font-size: 13px;
+    color: var(--muted);
+    margin: -4px 0 12px;
+  }
+
+  .boatGroup{ margin-bottom: 14px; }
+  .boatGroup .boatName{
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .anglerRow{ display:flex; gap:8px; flex-wrap:wrap; }
+  .anglerBtn{
+    flex: 1 1 auto;
+    min-width: 92px;
+    padding: 12px 10px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+    text-align:center;
+    cursor:pointer;
+  }
+  .anglerBtn[data-boat="valppi"].active{ background: var(--valppi); border-color: var(--valppi); color:#fff; }
+  .anglerBtn[data-boat="nymar"].active{ background: var(--nymar); border-color: var(--nymar); color:#fff; }
+
+  .lengthWrap{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    background: var(--card);
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 16px;
+  }
+  .lengthWrap input{
+    border:none;
+    outline:none;
+    background:transparent;
+    font-size: 28px;
+    font-family: var(--font-display);
+    width: 100%;
+    color: var(--ink);
+  }
+  .lengthWrap span{ font-size:15px; color:var(--muted); }
+
+  .chipRow{ display:flex; gap:8px; flex-wrap:wrap; margin-top: 10px; }
+  .chip{
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--line);
+    background: var(--card);
+    font-size: 13.5px;
+    color: var(--ink);
+    cursor:pointer;
+  }
+  .chip.active{ background: var(--deep); border-color: var(--deep); color:#fff; }
+
+  .primaryBtn{
+    width:100%;
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    background: var(--deep);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor:pointer;
+  }
+  .primaryBtn:disabled{ background: var(--line); color: var(--muted); }
+  .secondaryBtn{
+    width:100%;
+    padding: 13px;
+    border-radius: 12px;
+    border: 1.5px solid var(--deep);
+    background: transparent;
+    color: var(--deep);
+    font-size: 15px;
+    font-weight: 600;
+    cursor:pointer;
+  }
+  .msg{
+    font-size: 13px;
+    color: var(--deep-2);
+    margin-top: 8px;
+    min-height: 16px;
+    opacity:0;
+    transition: opacity .2s ease;
+  }
+  .msg.show{ opacity:1; }
+  @media (prefers-reduced-motion: reduce){ .msg{ transition:none; } }
+
+  .catchRow{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .catchRow:last-child{ border-bottom:none; }
+  .dot{ width:9px; height:9px; border-radius:50%; flex:0 0 auto; }
+  .dot.valppi{ background: var(--valppi); }
+  .dot.nymar{ background: var(--nymar); }
+  .catchMain{ flex:1 1 auto; min-width:0; }
+  .catchName{ font-size:14.5px; font-weight:600; }
+  .catchMeta{ font-size:12.5px; color: var(--muted); }
+  .catchLen{ font-family: var(--font-display); font-size:17px; margin-right:4px; }
+  .delBtn{
+    border:none; background:transparent; color: var(--muted);
+    font-size: 18px; padding: 4px 6px; cursor:pointer; line-height:1;
+  }
+  .empty{ font-size:14px; color: var(--muted); padding: 6px 2px; }
+
+  .rankCard{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 9px;
+  }
+  .rankCard.first{ border-color: var(--sand); box-shadow: 0 0 0 1px var(--sand) inset; }
+  .rankNum{
+    font-family: var(--font-display);
+    font-size: 17px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--paper);
+    color: var(--muted);
+    flex: 0 0 auto;
+  }
+  .rankCard.first .rankNum{ background: var(--sand); color:#fff; }
+  .rankBody{ flex:1 1 auto; min-width:0; }
+  .rankName{ font-size:15.5px; font-weight:700; }
+  .rankSub{ font-size:12.5px; color:var(--muted); margin-top:1px; }
+  .rankSum{ font-family: var(--font-display); font-size:19px; text-align:right; flex:0 0 auto; }
+
+  .statCard{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .statLabel{ font-size:12.5px; color:var(--muted); margin-bottom:3px; }
+  .statValue{ font-family: var(--font-display); font-size:20px; }
+  .statSub{ font-size:13px; color:var(--muted); margin-top:2px; }
+
+  textarea#exportBox{
+    width:100%;
+    min-height: 110px;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    font-family: monospace;
+    font-size: 12px;
+    resize: vertical;
+  }
+  textarea#importBox{
+    width:100%;
+    min-height: 90px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    font-family: monospace;
+    font-size: 12px;
+    resize: vertical;
+    margin-bottom: 10px;
+  }
+  .hidden{ display:none !important; }
+  .fileRow{ margin: 10px 0; }
+  .fileRow label{
+    display:inline-block;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    font-size: 13.5px;
+    cursor:pointer;
+  }
+  .fileRow input[type=file]{ display:none; }
+
+  .dangerZone{
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--line);
+  }
+  .dangerZone h2{ color:#8A3B2B; font-size:16px; }
+
+  nav.tabbar{
+    position: fixed;
+    left:0; right:0; bottom:0;
+    display:flex;
+    background: var(--card);
+    border-top: 1px solid var(--line);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  }
+  .tab{
+    flex:1 1 0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+    padding: 6px 2px;
+    background:none;
+    border:none;
+    color: var(--muted);
+    font-size: 11px;
+    cursor:pointer;
+  }
+  .tab svg{ width:22px; height:22px; }
+  .tab.active{ color: var(--deep); }
+  .tab.active svg{ color: var(--deep); }
+
+  .syncLine{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: rgba(245,240,230,0.75);
+  }
+  .syncDot{
+    width:7px; height:7px; border-radius:50%;
+    background: var(--muted);
+    flex:0 0 auto;
+  }
+  .syncDot.ok{ background:#7FB88A; }
+  .syncDot.syncing{ background: var(--sand); }
+  .syncDot.error{ background:#D9764A; }
+  .syncPanel{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .syncPanel .syncLine{ color: var(--muted); margin-top:0; margin-bottom:10px; font-size:13px; }
+  .syncPanel .syncDot{ width:8px; height:8px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <svg class="fishmark" viewBox="0 0 24 24" fill="none" stroke="#F5F0E6" stroke-width="1"><path d="M3 12c2.5-3.5 6-5.5 10-5.5 4 0 6.5 2 8 5.5-1.5 3.5-4 5.5-8 5.5-4 0-7.5-2-10-5.5z"/><circle cx="8" cy="11" r=".8" fill="#F5F0E6" stroke="none"/></svg>
+  <h1>Ahvenkisa</h1>
+  <div class="sub">Nauvo · Välppi (Pasi, Kimmo, Jaska) vs Nymar (Antti, Jani, Ile)</div>
+  <div class="leaderBanner" id="leaderBanner"></div>
+  <div class="syncLine" id="syncLineTop"><span class="syncDot" id="syncDotTop"></span><span id="syncTextTop">Ei yhteistä tallennusta määritetty</span></div>
+</header>
+
+<main>
+
+  <!-- LOG CATCH VIEW -->
+  <div class="view active" data-view="log">
+    <section class="block">
+      <h2>Kirjaa kala</h2>
+      <div class="hint">Valitse kalastaja, mittaa pituus mittalaudalta ja tallenna.</div>
+
+      <div id="anglerPicker"></div>
+
+      <div class="lengthWrap" style="margin-top:14px;">
+        <input type="number" inputmode="decimal" step="0.5" min="0" max="70" id="lengthInput" placeholder="0">
+        <span>cm</span>
+      </div>
+
+      <div class="chipRow" id="speciesPicker"></div>
+
+      <button class="primaryBtn" id="saveCatchBtn" disabled>Tallenna kala</button>
+      <div class="msg" id="logMsg"></div>
+    </section>
+
+    <section class="block">
+      <h2>Viimeisimmät saaliit</h2>
+      <div id="recentList"></div>
+    </section>
+  </div>
+
+  <!-- RESULTS VIEW -->
+  <div class="view" data-view="results">
+    <section class="block">
+      <h2>Henkilökohtainen</h2>
+      <div class="hint">Kolmen suurimman ahvenen yhteispituus.</div>
+      <div id="individualStandings"></div>
+    </section>
+    <section class="block">
+      <h2>Veneet</h2>
+      <div class="hint">Veneen kolmen suurimman ahvenen yhteispituus, koko miehistöltä.</div>
+      <div id="boatStandings"></div>
+    </section>
+  </div>
+
+  <!-- SIDE COMPETITIONS VIEW -->
+  <div class="view" data-view="side">
+    <section class="block">
+      <h2>Sivukilpailut</h2>
+      <div id="sideStats"></div>
+    </section>
+    <section class="block">
+      <h2>Sivusaalis</h2>
+      <div class="hint">Muut lajit kuin ahven.</div>
+      <div id="sideCatchList"></div>
+    </section>
+  </div>
+
+  <!-- SHARE / MERGE VIEW -->
+  <div class="view" data-view="share">
+    <section class="block">
+      <h2>Yhteinen tallennus</h2>
+      <div class="hint">Kaikkien kuuden syöttämät saaliit synkronoituvat automaattisesti tähän, kun yhteys on kunnossa.</div>
+      <div class="syncPanel">
+        <div class="syncLine"><span class="syncDot" id="syncDotPanel"></span><span id="syncTextPanel">Ei määritetty</span></div>
+        <button class="secondaryBtn" id="syncNowBtn">Synkronoi nyt</button>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>Varakeinot</h2>
+      <div class="hint">Jos yhteys pätkii koko päivän, tulokset voi yhdistää myös käsin jälkikäteen.</div>
+      <button class="secondaryBtn" id="exportBtn">Jaa saalistiedot</button>
+      <div class="fileRow">
+        <button class="secondaryBtn" id="downloadBtn">Lataa varmuuskopio (.json)</button>
+      </div>
+      <textarea id="exportBox" class="hidden" readonly></textarea>
+      <button class="secondaryBtn hidden" id="copyBtn" style="margin-top:8px;">Kopioi leikepöydälle</button>
+
+      <textarea id="importBox" placeholder="Liitä toisen laitteen jakama data tähän..." style="margin-top:14px;"></textarea>
+      <button class="secondaryBtn" id="importBtn">Tuo liitetty data</button>
+      <div class="fileRow">
+        <label for="importFile">Tuo tiedostosta</label>
+        <input type="file" id="importFile" accept="application/json,.json">
+      </div>
+      <div class="msg" id="shareMsg"></div>
+    </section>
+
+    <div class="dangerZone">
+      <h2>Nollaa kisa</h2>
+      <div class="hint">Poistaa kaikkien saaliit – myös yhteisestä tallennuksesta, ei vain tästä laitteesta.</div>
+      <button class="secondaryBtn" id="resetBtn" style="border-color:#8A3B2B; color:#8A3B2B;">Nollaa kaikki saaliit</button>
+    </div>
+  </div>
+
+</main>
+
+<nav class="tabbar">
+  <button class="tab active" data-view="log" aria-label="Kirjaa saalis">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12c2.5-3.5 6-5.5 10-5.5 4 0 6.5 2 8 5.5-1.5 3.5-4 5.5-8 5.5-4 0-7.5-2-10-5.5z"/>
+      <path d="M21 12l2.2-2.4M21 12l2.2 2.4"/>
+      <circle cx="8" cy="11" r=".7" fill="currentColor" stroke="none"/>
+    </svg>
+    Saalis
+  </button>
+  <button class="tab" data-view="results" aria-label="Tulokset">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 4h10v3a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z"/>
+      <path d="M7 5H4a3 3 0 0 0 3 4"/>
+      <path d="M17 5h3a3 3 0 0 1-3 4"/>
+      <path d="M12 12v3"/>
+      <path d="M9 19h6"/>
+      <path d="M10 16h4l.4 3H9.6z"/>
+    </svg>
+    Tulokset
+  </button>
+  <button class="tab" data-view="side" aria-label="Sivukilpailut">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/>
+      <path d="M2 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/>
+    </svg>
+    Sivukisat
+  </button>
+  <button class="tab" data-view="share" aria-label="Jaa ja tuo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v11"/>
+      <path d="M8 7l4-4 4 4"/>
+      <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>
+    </svg>
+    Jaa
+  </button>
+</nav>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = 'ahvenkisa-nauvo-v1';
+
+  // Yhteinen tallennus (JSONBin.io) – täytä nämä kaksi ennen julkaisua.
+  // 1) Kirjaudu jsonbin.io, luo uusi Bin, sisällöksi {"catches":[],"deletedIds":[]}, aseta Private.
+  // 2) Luo API Keys -sivulla uusi Access Key, jolla oikeudet vain tähän Biniin (Read + Update).
+  // 3) Liitä Bin ID ja Access Key alle. Jos jätät nämä ennalleen, sovellus toimii vain paikallisesti.
+  var JSONBIN_ID = '6a96b537f5f4af5e295c1ad2';
+  var JSONBIN_KEY = '$2a$10$hj9/23sfFLe1fI1FENoQmusiGCi5hBOquXiIjPq66J17rIp2SmQ8W';
+  var JSONBIN_BASE = 'https://api.jsonbin.io/v3/b/' + JSONBIN_ID;
+  var POLL_INTERVAL_MS = 30000;
+
+  var BOATS = [
+    {id:'valppi', name:'Välppi', anglers:['Pasi','Kimmo','Jaska']},
+    {id:'nymar', name:'Nymar', anglers:['Antti','Jani','Ile']}
+  ];
+  var SPECIES = ['Ahven','Hauki','Kuha','Särki','Muu'];
+
+  var state = loadState();
+  var selectedAngler = null;
+  var selectedSpecies = 'Ahven';
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return {catches:[], deletedIds:[]};
+      var parsed = JSON.parse(raw);
+      if(!parsed || !Array.isArray(parsed.catches)) return {catches:[], deletedIds:[]};
+      if(!Array.isArray(parsed.deletedIds)) parsed.deletedIds = [];
+      return parsed;
+    }catch(e){ return {catches:[], deletedIds:[]}; }
+  }
+  function saveState(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  function isSyncConfigured(){
+    return JSONBIN_ID && JSONBIN_ID.indexOf('PASTE_') !== 0 && JSONBIN_KEY && JSONBIN_KEY.indexOf('PASTE_') !== 0;
+  }
+  function boatOfAngler(name){
+    for(var i=0;i<BOATS.length;i++){ if(BOATS[i].anglers.indexOf(name)!==-1) return BOATS[i]; }
+    return null;
+  }
+  function makeId(){
+    if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'c'+Date.now()+'-'+Math.random().toString(36).slice(2,9);
+  }
+  function formatCm(n){
+    var rounded = Math.round(n*10)/10;
+    var str = (Math.abs(rounded % 1) < 0.001) ? rounded.toFixed(0) : rounded.toFixed(1);
+    return str.replace('.',',') + ' cm';
+  }
+  function pluralKala(n){ return n===1 ? 'kala' : 'kalaa'; }
+  function formatTime(ts){
+    return new Date(ts).toLocaleTimeString('fi-FI',{hour:'2-digit',minute:'2-digit'});
+  }
+  function formatDate(ts){
+    return new Date(ts).toLocaleDateString('fi-FI',{day:'numeric',month:'numeric'});
+  }
+  function el(tag, cls, html){
+    var e = document.createElement(tag);
+    if(cls) e.className = cls;
+    if(html!==undefined) e.innerHTML = html;
+    return e;
+  }
+  function flashMsg(id, text){
+    var e = document.getElementById(id);
+    e.textContent = text;
+    e.classList.add('show');
+    clearTimeout(e._t);
+    e._t = setTimeout(function(){ e.classList.remove('show'); }, 4500);
+  }
+
+  // ---------- Shared storage sync ----------
+  var lastSyncTime = null;
+  var syncing = false;
+
+  function setSyncStatus(kind, text){
+    var dotIds = ['syncDotTop','syncDotPanel'];
+    var textIds = ['syncTextTop','syncTextPanel'];
+    dotIds.forEach(function(id){
+      var d = document.getElementById(id);
+      if(d) d.className = 'syncDot' + (kind ? ' '+kind : '');
+    });
+    textIds.forEach(function(id){
+      var t = document.getElementById(id);
+      if(t) t.textContent = text;
+    });
+  }
+  function renderSyncStatus(){
+    if(!isSyncConfigured()){
+      setSyncStatus('', 'Ei yhteistä tallennusta määritetty');
+      return;
+    }
+    if(syncing){
+      setSyncStatus('syncing', 'Synkronoidaan…');
+    } else if(lastSyncTime){
+      setSyncStatus('ok', 'Synkronoitu klo ' + formatTime(lastSyncTime));
+    } else {
+      setSyncStatus('error', 'Ei vielä yhteyttä');
+    }
+  }
+  function fetchRemote(){
+    return fetch(JSONBIN_BASE + '?meta=false', {
+      headers: { 'X-Access-Key': JSONBIN_KEY }
+    }).then(function(res){
+      if(!res.ok) throw new Error('fetch failed: '+res.status);
+      return res.json();
+    }).then(function(data){
+      return {
+        catches: Array.isArray(data.catches) ? data.catches : [],
+        deletedIds: Array.isArray(data.deletedIds) ? data.deletedIds : []
+      };
+    });
+  }
+  function pushRemote(payload){
+    return fetch(JSONBIN_BASE, {
+      method: 'PUT',
+      headers: { 'Content-Type':'application/json', 'X-Access-Key': JSONBIN_KEY },
+      body: JSON.stringify(payload)
+    }).then(function(res){
+      if(!res.ok) throw new Error('push failed: '+res.status);
+    });
+  }
+  function mergeState(local, remote){
+    var deletedIds = local.deletedIds.slice();
+    remote.deletedIds.forEach(function(id){ if(deletedIds.indexOf(id)===-1) deletedIds.push(id); });
+    var deletedSet = {};
+    deletedIds.forEach(function(id){ deletedSet[id] = true; });
+    var byId = {};
+    remote.catches.forEach(function(c){ if(!deletedSet[c.id]) byId[c.id] = c; });
+    local.catches.forEach(function(c){ if(!deletedSet[c.id]) byId[c.id] = c; });
+    var catches = Object.keys(byId).map(function(k){ return byId[k]; });
+    return {catches: catches, deletedIds: deletedIds};
+  }
+  function sync(){
+    if(!isSyncConfigured() || syncing) { renderSyncStatus(); return Promise.resolve(); }
+    syncing = true;
+    renderSyncStatus();
+    return fetchRemote().then(function(remote){
+      var merged = mergeState(state, remote);
+      var changed = merged.catches.length !== remote.catches.length ||
+                    merged.deletedIds.length !== remote.deletedIds.length;
+      state = merged;
+      saveState();
+      renderAll();
+      if(changed){
+        return pushRemote(merged);
+      }
+    }).then(function(){
+      lastSyncTime = Date.now();
+      syncing = false;
+      renderSyncStatus();
+    }).catch(function(){
+      syncing = false;
+      renderSyncStatus();
+    });
+  }
+
+  // ---------- Log view ----------
+  function buildAnglerPicker(){
+    var wrap = document.getElementById('anglerPicker');
+    wrap.innerHTML = '';
+    BOATS.forEach(function(boat){
+      var group = el('div','boatGroup');
+      group.appendChild(el('div','boatName', boat.name));
+      var row = el('div','anglerRow');
+      boat.anglers.forEach(function(name){
+        var btn = el('button','anglerBtn', name);
+        btn.type = 'button';
+        btn.dataset.boat = boat.id;
+        btn.dataset.name = name;
+        btn.addEventListener('click', function(){
+          selectedAngler = name;
+          document.querySelectorAll('.anglerBtn').forEach(function(b){ b.classList.toggle('active', b.dataset.name===name); });
+          updateSaveEnabled();
+        });
+        row.appendChild(btn);
+      });
+      group.appendChild(row);
+      wrap.appendChild(group);
+    });
+  }
+  function buildSpeciesPicker(){
+    var wrap = document.getElementById('speciesPicker');
+    wrap.innerHTML = '';
+    SPECIES.forEach(function(sp){
+      var chip = el('button','chip'+(sp==='Ahven'?' active':''), sp);
+      chip.type = 'button';
+      chip.dataset.sp = sp;
+      chip.addEventListener('click', function(){
+        selectedSpecies = sp;
+        document.querySelectorAll('.chip').forEach(function(c){ c.classList.toggle('active', c.dataset.sp===sp); });
+      });
+      wrap.appendChild(chip);
+    });
+  }
+  function updateSaveEnabled(){
+    var len = parseFloat(document.getElementById('lengthInput').value);
+    document.getElementById('saveCatchBtn').disabled = !(selectedAngler && len > 0);
+  }
+  function saveCatch(){
+    var lenInput = document.getElementById('lengthInput');
+    var len = parseFloat(lenInput.value);
+    if(!selectedAngler || !(len > 0)) return;
+    var boat = boatOfAngler(selectedAngler);
+    var c = {
+      id: makeId(),
+      angler: selectedAngler,
+      boat: boat ? boat.id : null,
+      species: selectedSpecies,
+      length: len,
+      time: Date.now()
+    };
+    state.catches.push(c);
+    saveState();
+    flashMsg('logMsg', selectedAngler + ' – ' + formatCm(len) + (selectedSpecies!=='Ahven' ? ' (' + selectedSpecies + ')' : '') + ' kirjattu');
+    lenInput.value = '';
+    updateSaveEnabled();
+    renderAll();
+    sync();
+  }
+  function deleteCatch(id){
+    var msg = isSyncConfigured() ? 'Poistetaanko tämä saalis kaikkien näkymästä?' : 'Poistetaanko tämä saalis?';
+    if(!confirm(msg)) return;
+    state.catches = state.catches.filter(function(c){ return c.id !== id; });
+    if(state.deletedIds.indexOf(id) === -1) state.deletedIds.push(id);
+    saveState();
+    renderAll();
+    sync();
+  }
+  function renderRecentList(){
+    var wrap = document.getElementById('recentList');
+    wrap.innerHTML = '';
+    var sorted = state.catches.slice().sort(function(a,b){ return b.time - a.time; });
+    if(!sorted.length){
+      wrap.appendChild(el('div','empty','Ei vielä kirjattuja saaliita.'));
+      return;
+    }
+    sorted.slice(0,25).forEach(function(c){
+      var row = el('div','catchRow');
+      row.appendChild(el('div','dot '+(c.boat||'')));
+      var main = el('div','catchMain');
+      main.appendChild(el('div','catchName', c.angler + (c.species!=='Ahven' ? ' · '+c.species : '')));
+      main.appendChild(el('div','catchMeta', formatDate(c.time)+' klo '+formatTime(c.time)));
+      row.appendChild(main);
+      row.appendChild(el('div','catchLen', formatCm(c.length)));
+      var del = el('button','delBtn','×');
+      del.type='button';
+      del.setAttribute('aria-label','Poista saalis');
+      del.addEventListener('click', function(){ deleteCatch(c.id); });
+      row.appendChild(del);
+      wrap.appendChild(row);
+    });
+  }
+
+  // ---------- Standings ----------
+  function top3Sum(catches){
+    var sorted = catches.slice().sort(function(a,b){ return b.length - a.length; });
+    var top = sorted.slice(0,3);
+    var sum = top.reduce(function(s,c){ return s + c.length; }, 0);
+    return {sum: sum, top: top};
+  }
+  function individualStandings(){
+    var anglers = [];
+    BOATS.forEach(function(b){ anglers = anglers.concat(b.anglers); });
+    return anglers.map(function(name){
+      var catches = state.catches.filter(function(c){ return c.angler===name && c.species==='Ahven'; });
+      var r = top3Sum(catches);
+      var boat = boatOfAngler(name);
+      return {name:name, boatId: boat?boat.id:null, sum:r.sum, count:catches.length, top:r.top};
+    }).sort(function(a,b){ return b.sum - a.sum; });
+  }
+  function boatStandings(){
+    return BOATS.map(function(b){
+      var catches = state.catches.filter(function(c){ return c.boat===b.id && c.species==='Ahven'; });
+      var r = top3Sum(catches);
+      return {id:b.id, name:b.name, sum:r.sum, count:catches.length, top:r.top};
+    }).sort(function(a,b){ return b.sum - a.sum; });
+  }
+  function renderLeader(){
+    var standings = individualStandings().filter(function(s){ return s.count>0; });
+    var wrap = document.getElementById('leaderBanner');
+    if(!standings.length){
+      wrap.innerHTML = '';
+      wrap.appendChild(el('div','leaderEmpty','Ei vielä saaliita – ensimmäinen ahven avaa tulostaulun.'));
+      return;
+    }
+    var top = standings[0];
+    wrap.innerHTML = '';
+    wrap.appendChild(el('div','leaderNum', formatCm(top.sum)));
+    wrap.appendChild(el('div','leaderLabel', top.name + ' johtaa · ' + top.count + ' ' + pluralKala(top.count) + ' kirjattu'));
+  }
+  function renderStandings(){
+    var indWrap = document.getElementById('individualStandings');
+    indWrap.innerHTML = '';
+    var ind = individualStandings();
+    if(!ind.some(function(s){ return s.count>0; })){
+      indWrap.appendChild(el('div','empty','Ei vielä tuloksia.'));
+    } else {
+      ind.forEach(function(s, i){
+        var card = el('div','rankCard'+(i===0 && s.count>0 ? ' first' : ''));
+        card.appendChild(el('div','rankNum', String(i+1)));
+        var body = el('div','rankBody');
+        var topStr = s.top.map(function(c){ return formatCm(c.length); }).join(' · ');
+        body.appendChild(el('div','rankName', s.name));
+        body.appendChild(el('div','rankSub', s.count ? (s.count+' '+pluralKala(s.count)+' · '+ (topStr || '–')) : 'Ei saaliita'));
+        card.appendChild(body);
+        card.appendChild(el('div','rankSum', s.count ? formatCm(s.sum) : '–'));
+        indWrap.appendChild(card);
+      });
+    }
+
+    var boatWrap = document.getElementById('boatStandings');
+    boatWrap.innerHTML = '';
+    var boats = boatStandings();
+    boats.forEach(function(s, i){
+      var card = el('div','rankCard'+(i===0 && s.count>0 ? ' first' : ''));
+      card.appendChild(el('div','rankNum', String(i+1)));
+      var body = el('div','rankBody');
+      var topStr = s.top.map(function(c){ return c.angler+' '+formatCm(c.length); }).join(' · ');
+      body.appendChild(el('div','rankName', s.name));
+      body.appendChild(el('div','rankSub', s.count ? (s.count+' '+pluralKala(s.count)+' · '+(topStr||'–')) : 'Ei saaliita'));
+      card.appendChild(body);
+      card.appendChild(el('div','rankSum', s.count ? formatCm(s.sum) : '–'));
+      boatWrap.appendChild(card);
+    });
+  }
+
+  // ---------- Side competitions ----------
+  function sideStats(){
+    var ahven = state.catches.filter(function(c){ return c.species==='Ahven'; });
+    var smallest = ahven.length ? ahven.reduce(function(m,c){ return c.length<m.length?c:m; }) : null;
+    var byTime = state.catches.slice().sort(function(a,b){ return a.time-b.time; });
+    var first = byTime.length ? byTime[0] : null;
+    var last = byTime.length>1 ? byTime[byTime.length-1] : null;
+    var counts = {};
+    ahven.forEach(function(c){ counts[c.angler] = (counts[c.angler]||0)+1; });
+    var mostName=null, mostCount=0;
+    Object.keys(counts).forEach(function(name){
+      if(counts[name]>mostCount){ mostCount=counts[name]; mostName=name; }
+    });
+    var sideCatch = state.catches.filter(function(c){ return c.species!=='Ahven'; }).sort(function(a,b){ return b.time-a.time; });
+    return {smallest:smallest, first:first, last:last, mostName:mostName, mostCount:mostCount, sideCatch:sideCatch};
+  }
+  function statCard(label, value, sub){
+    var card = el('div','statCard');
+    card.appendChild(el('div','statLabel', label));
+    card.appendChild(el('div','statValue', value));
+    if(sub) card.appendChild(el('div','statSub', sub));
+    return card;
+  }
+  function renderSideStats(){
+    var wrap = document.getElementById('sideStats');
+    wrap.innerHTML = '';
+    var s = sideStats();
+
+    wrap.appendChild(statCard(
+      'Pienin ahven',
+      s.smallest ? formatCm(s.smallest.length) : '–',
+      s.smallest ? (s.smallest.angler+' · '+formatTime(s.smallest.time)) : 'Ei vielä kirjattu'
+    ));
+    wrap.appendChild(statCard(
+      'Ensimmäinen kala',
+      s.first ? formatCm(s.first.length) : '–',
+      s.first ? (s.first.angler+(s.first.species!=='Ahven'?' · '+s.first.species:'')+' · '+formatTime(s.first.time)) : 'Ei vielä kirjattu'
+    ));
+    wrap.appendChild(statCard(
+      'Viimeisin kala',
+      s.last ? formatCm(s.last.length) : '–',
+      s.last ? (s.last.angler+(s.last.species!=='Ahven'?' · '+s.last.species:'')+' · '+formatTime(s.last.time)) : 'Odottaa vielä'
+    ));
+    wrap.appendChild(statCard(
+      'Ahkerin kalastaja',
+      s.mostName || '–',
+      s.mostName ? (s.mostCount+' '+pluralKala(s.mostCount)+' kirjattu') : 'Ei vielä kirjattu'
+    ));
+
+    var listWrap = document.getElementById('sideCatchList');
+    listWrap.innerHTML = '';
+    if(!s.sideCatch.length){
+      listWrap.appendChild(el('div','empty','Ei muita lajeja kirjattu vielä.'));
+      return;
+    }
+    s.sideCatch.forEach(function(c){
+      var row = el('div','catchRow');
+      row.appendChild(el('div','dot '+(c.boat||'')));
+      var main = el('div','catchMain');
+      main.appendChild(el('div','catchName', c.angler+' · '+c.species));
+      main.appendChild(el('div','catchMeta', formatDate(c.time)+' klo '+formatTime(c.time)));
+      row.appendChild(main);
+      row.appendChild(el('div','catchLen', formatCm(c.length)));
+      listWrap.appendChild(row);
+    });
+  }
+
+  // ---------- Share / import / export ----------
+  function buildExportPayload(){
+    return JSON.stringify({version:1, exportedAt: Date.now(), catches: state.catches, deletedIds: state.deletedIds});
+  }
+  function exportData(){
+    var payload = buildExportPayload();
+    if(navigator.share){
+      navigator.share({title:'Ahvenkisa – saalistiedot', text: payload}).catch(function(){
+        showExportBox(payload);
+      });
+    } else {
+      showExportBox(payload);
+    }
+  }
+  function showExportBox(payload){
+    var box = document.getElementById('exportBox');
+    box.value = payload;
+    box.classList.remove('hidden');
+    document.getElementById('copyBtn').classList.remove('hidden');
+  }
+  function copyExport(){
+    var box = document.getElementById('exportBox');
+    box.classList.remove('hidden');
+    box.select();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(box.value).then(function(){
+        flashMsg('shareMsg','Kopioitu leikepöydälle');
+      }).catch(function(){
+        flashMsg('shareMsg','Kopiointi ei onnistunut – valitse teksti ja kopioi käsin');
+      });
+    } else {
+      flashMsg('shareMsg','Valitse teksti yllä ja kopioi käsin');
+    }
+  }
+  function downloadBackup(){
+    var payload = buildExportPayload();
+    var blob = new Blob([payload], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ahvenkisa-varmuuskopio-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+  function importFromText(text){
+    var parsed;
+    try{ parsed = JSON.parse(text); }
+    catch(e){ flashMsg('shareMsg','Ei kelvollista dataa – tarkista teksti'); return; }
+    var incoming = (parsed && Array.isArray(parsed.catches)) ? parsed.catches : null;
+    if(!incoming){ flashMsg('shareMsg','Ei kelvollista dataa – tarkista teksti'); return; }
+    var incomingDeleted = Array.isArray(parsed.deletedIds) ? parsed.deletedIds : [];
+    incomingDeleted.forEach(function(id){ if(state.deletedIds.indexOf(id)===-1) state.deletedIds.push(id); });
+    var deletedSet = {};
+    state.deletedIds.forEach(function(id){ deletedSet[id] = true; });
+    var existingIds = {};
+    state.catches.forEach(function(c){ existingIds[c.id] = true; });
+    var added = 0;
+    incoming.forEach(function(c){
+      if(c && c.id && !existingIds[c.id] && !deletedSet[c.id] && c.angler && typeof c.length==='number'){
+        state.catches.push(c);
+        existingIds[c.id] = true;
+        added++;
+      }
+    });
+    state.catches = state.catches.filter(function(c){ return !deletedSet[c.id]; });
+    saveState();
+    renderAll();
+    flashMsg('shareMsg', added>0 ? ('Tuotu '+added+' uutta saalista') : 'Ei uusia saaliita – kaikki olivat jo listalla');
+    sync();
+  }
+  function resetAll(){
+    var msg = isSyncConfigured()
+      ? 'Nollataanko koko kisa kaikilta kuudelta? Tämä poistaa yhteisestä tallennuksesta kaikkien saaliit, ei vain tämän laitteen.'
+      : 'Nollataanko koko kisa? Kaikki tälle laitteelle kirjatut saaliit poistetaan.';
+    if(!confirm(msg)) return;
+    var allIds = state.catches.map(function(c){ return c.id; });
+    var deletedIds = state.deletedIds.slice();
+    allIds.forEach(function(id){ if(deletedIds.indexOf(id)===-1) deletedIds.push(id); });
+    state = {catches:[], deletedIds: deletedIds};
+    saveState();
+    renderAll();
+    sync();
+  }
+
+  // ---------- Tabs ----------
+  function showView(view){
+    document.querySelectorAll('main .view').forEach(function(v){ v.classList.toggle('active', v.dataset.view===view); });
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.dataset.view===view); });
+    document.querySelector('main').scrollTop = 0;
+  }
+
+  function renderAll(){
+    renderLeader();
+    renderRecentList();
+    renderStandings();
+    renderSideStats();
+  }
+
+  function init(){
+    buildAnglerPicker();
+    buildSpeciesPicker();
+
+    document.getElementById('lengthInput').addEventListener('input', updateSaveEnabled);
+    document.getElementById('saveCatchBtn').addEventListener('click', saveCatch);
+
+    document.querySelectorAll('.tab').forEach(function(t){
+      t.addEventListener('click', function(){ showView(t.dataset.view); });
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', exportData);
+    document.getElementById('downloadBtn').addEventListener('click', downloadBackup);
+    document.getElementById('copyBtn').addEventListener('click', copyExport);
+    document.getElementById('importBtn').addEventListener('click', function(){
+      importFromText(document.getElementById('importBox').value);
+    });
+    document.getElementById('importFile').addEventListener('change', function(e){
+      var file = e.target.files && e.target.files[0];
+      if(!file) return;
+      var reader = new FileReader();
+      reader.onload = function(){ importFromText(reader.result); };
+      reader.readAsText(file);
+    });
+    document.getElementById('resetBtn').addEventListener('click', resetAll);
+    document.getElementById('syncNowBtn').addEventListener('click', sync);
+
+    renderAll();
+    renderSyncStatus();
+
+    if(isSyncConfigured()){
+      sync();
+      setInterval(sync, POLL_INTERVAL_MS);
+      window.addEventListener('online', sync);
+      window.addEventListener('focus', sync);
+      document.addEventListener('visibilitychange', function(){
+        if(document.visibilityState === 'visible') sync();
+      });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
