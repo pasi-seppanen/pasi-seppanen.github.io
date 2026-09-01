@@ -217,11 +217,41 @@
   .catchName{ font-size:14.5px; font-weight:600; }
   .catchMeta{ font-size:12.5px; color: var(--muted); }
   .catchLen{ font-family: var(--font-display); font-size:17px; margin-right:4px; }
+  .catchThumb{
+    width:36px; height:36px; border-radius:8px; object-fit:cover;
+    flex:0 0 auto; cursor:pointer; background: var(--paper);
+  }
   .delBtn{
     border:none; background:transparent; color: var(--muted);
     font-size: 18px; padding: 4px 6px; cursor:pointer; line-height:1;
   }
   .empty{ font-size:14px; color: var(--muted); padding: 6px 2px; }
+
+  .photoRow{ margin-top: 10px; }
+  .photoPreviewWrap{
+    position:relative;
+    display:inline-block;
+    margin-top:10px;
+  }
+  .photoPreviewWrap img{
+    max-width:130px;
+    max-height:130px;
+    border-radius:12px;
+    display:block;
+    border: 1.5px solid var(--line);
+  }
+  #photoRemoveBtn{
+    position:absolute;
+    top:-8px; right:-8px;
+    width:24px; height:24px;
+    border-radius:50%;
+    border:none;
+    background: var(--deep);
+    color:#fff;
+    font-size:14px;
+    line-height:1;
+    cursor:pointer;
+  }
 
   .rankCard{
     display:flex;
@@ -382,6 +412,15 @@
 
       <div class="chipRow" id="speciesPicker"></div>
 
+      <div class="photoRow">
+        <button class="secondaryBtn" id="photoBtn" type="button">Ota kuva kalasta</button>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" class="hidden">
+        <div id="photoPreviewWrap" class="photoPreviewWrap hidden">
+          <img id="photoPreview" alt="">
+          <button id="photoRemoveBtn" type="button" aria-label="Poista kuva">×</button>
+        </div>
+      </div>
+
       <button class="primaryBtn" id="saveCatchBtn" disabled>Tallenna kala</button>
       <div class="msg" id="logMsg"></div>
     </section>
@@ -510,6 +549,13 @@
   var JSONBIN_BASE = 'https://api.jsonbin.io/v3/b/' + JSONBIN_ID;
   var POLL_INTERVAL_MS = 30000;
 
+  // Kalan kuvat (imgbb.com) – ladataan kuva sinne, ja vain URL tallennetaan
+  // JSONBiniin (pitää synkronoitavan datan pienenä).
+  var IMGBB_KEY = '93c704bf6a397d0a83f694be85da9d7e';
+  var IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+  var PHOTO_MAX_DIM = 1000;
+  var PHOTO_QUALITY = 0.6;
+
   var BOATS = [
     {id:'valppi', name:'Välppi', anglers:['Pasi','Kimmo','Jaska']},
     {id:'nymar', name:'Nymar', anglers:['Antti','Jani','Ile']}
@@ -518,6 +564,7 @@
 
   var state = loadState();
   var selectedAngler = null;
+  var pendingPhotoDataUrl = null;
   var selectedSpecies = 'Ahven';
 
   function loadState(){
@@ -702,6 +749,63 @@
     var len = parseFloat(document.getElementById('lengthInput').value);
     document.getElementById('saveCatchBtn').disabled = !(selectedAngler && len > 0);
   }
+
+  // ---------- Photo capture ----------
+  function compressImage(file, maxDim, quality){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var img = new Image();
+        img.onload = function(){
+          var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          var cw = Math.max(1, Math.round(img.width * scale));
+          var ch = Math.max(1, Math.round(img.height * scale));
+          var canvas = document.createElement('canvas');
+          canvas.width = cw;
+          canvas.height = ch;
+          canvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = function(){ reject(new Error('image decode failed')); };
+        img.src = e.target.result;
+      };
+      reader.onerror = function(){ reject(new Error('file read failed')); };
+      reader.readAsDataURL(file);
+    });
+  }
+  function uploadPhoto(dataUrl){
+    var base64 = dataUrl.split(',')[1];
+    var body = new URLSearchParams();
+    body.append('image', base64);
+    return fetch(IMGBB_UPLOAD_URL + '?key=' + IMGBB_KEY, { method:'POST', body: body })
+      .then(function(res){ return res.json(); })
+      .then(function(json){
+        if(json && json.success && json.data && json.data.url) return json.data.url;
+        throw new Error('upload failed');
+      });
+  }
+  function showPhotoPreview(dataUrl){
+    document.getElementById('photoPreview').src = dataUrl;
+    document.getElementById('photoPreviewWrap').classList.remove('hidden');
+  }
+  function clearPendingPhoto(){
+    pendingPhotoDataUrl = null;
+    document.getElementById('photoInput').value = '';
+    document.getElementById('photoPreviewWrap').classList.add('hidden');
+    document.getElementById('photoPreview').src = '';
+  }
+  function handlePhotoFile(file){
+    if(!file) return;
+    flashMsg('logMsg', 'Käsitellään kuvaa…');
+    compressImage(file, PHOTO_MAX_DIM, PHOTO_QUALITY).then(function(dataUrl){
+      pendingPhotoDataUrl = dataUrl;
+      showPhotoPreview(dataUrl);
+      flashMsg('logMsg', 'Kuva valittu');
+    }).catch(function(){
+      flashMsg('logMsg', 'Kuvan käsittely epäonnistui');
+    });
+  }
+
   function saveCatch(){
     var lenInput = document.getElementById('lengthInput');
     var len = parseFloat(lenInput.value);
@@ -713,15 +817,34 @@
       boat: boat ? boat.id : null,
       species: selectedSpecies,
       length: len,
-      time: Date.now()
+      time: Date.now(),
+      photoUrl: null
     };
-    state.catches.push(c);
-    saveState();
-    flashMsg('logMsg', selectedAngler + ' – ' + formatCm(len) + (selectedSpecies!=='Ahven' ? ' (' + selectedSpecies + ')' : '') + ' kirjattu');
-    lenInput.value = '';
-    updateSaveEnabled();
-    renderAll();
-    sync();
+    var saveBtn = document.getElementById('saveCatchBtn');
+    var photoToUpload = pendingPhotoDataUrl;
+
+    function finish(){
+      state.catches.push(c);
+      saveState();
+      flashMsg('logMsg', selectedAngler + ' – ' + formatCm(len) + (selectedSpecies!=='Ahven' ? ' (' + selectedSpecies + ')' : '') + ' kirjattu');
+      lenInput.value = '';
+      clearPendingPhoto();
+      updateSaveEnabled();
+      renderAll();
+      sync();
+    }
+
+    if(photoToUpload){
+      saveBtn.disabled = true;
+      flashMsg('logMsg', 'Ladataan kuvaa…');
+      uploadPhoto(photoToUpload).then(function(url){
+        c.photoUrl = url;
+      }).catch(function(){
+        // Kuvan lataus epäonnistui – tallennetaan saalis silti ilman kuvaa.
+      }).then(finish);
+    } else {
+      finish();
+    }
   }
   function deleteCatch(id){
     var msg = isSyncConfigured() ? 'Poistetaanko tämä saalis kaikkien näkymästä?' : 'Poistetaanko tämä saalis?';
@@ -743,6 +866,14 @@
     sorted.slice(0,25).forEach(function(c){
       var row = el('div','catchRow');
       row.appendChild(el('div','dot '+(c.boat||'')));
+      if(c.photoUrl){
+        var thumb = document.createElement('img');
+        thumb.className = 'catchThumb';
+        thumb.src = c.photoUrl;
+        thumb.alt = '';
+        thumb.addEventListener('click', function(){ window.open(c.photoUrl, '_blank'); });
+        row.appendChild(thumb);
+      }
       var main = el('div','catchMain');
       main.appendChild(el('div','catchName', c.angler + (c.species!=='Ahven' ? ' · '+c.species : '')));
       main.appendChild(el('div','catchMeta', formatDate(c.time)+' klo '+formatTime(c.time)));
@@ -1004,6 +1135,17 @@
 
     document.getElementById('lengthInput').addEventListener('input', updateSaveEnabled);
     document.getElementById('saveCatchBtn').addEventListener('click', saveCatch);
+
+    document.getElementById('photoBtn').addEventListener('click', function(){
+      document.getElementById('photoInput').click();
+    });
+    document.getElementById('photoInput').addEventListener('change', function(e){
+      var file = e.target.files && e.target.files[0];
+      handlePhotoFile(file);
+    });
+    document.getElementById('photoRemoveBtn').addEventListener('click', function(){
+      clearPendingPhoto();
+    });
 
     document.querySelectorAll('.tab').forEach(function(t){
       t.addEventListener('click', function(){ showView(t.dataset.view); });
