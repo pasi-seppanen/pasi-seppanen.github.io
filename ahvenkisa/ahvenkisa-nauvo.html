@@ -62,27 +62,38 @@
     font-weight: 700;
     letter-spacing: 0.2px;
   }
-  header.top .sub{
-    margin-top: 4px;
-    font-size: 13px;
-    color: rgba(245,240,230,0.75);
-  }
   .leaderBanner{
     margin-top: 16px;
     padding-top: 14px;
     border-top: 1px solid rgba(245,240,230,0.18);
   }
-  .leaderNum{
+  .leaderRow{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 5px 0;
+  }
+  .leaderRank{
     font-family: var(--font-display);
-    font-size: 40px;
-    line-height: 1.05;
-    color: var(--sand);
+    font-size: 14px;
+    color: rgba(245,240,230,0.55);
+    width: 18px;
+    flex:0 0 auto;
   }
-  .leaderLabel{
-    font-size: 13.5px;
-    color: rgba(245,240,230,0.85);
-    margin-top: 2px;
+  .leaderRow:first-child .leaderRank{ color: var(--sand); }
+  .leaderName{
+    font-size: 14.5px;
+    font-weight: 600;
+    flex:1 1 auto;
+    min-width:0;
   }
+  .leaderSum{
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: rgba(245,240,230,0.9);
+    flex:0 0 auto;
+  }
+  .leaderRow:first-child .leaderSum{ color: var(--sand); font-size:19px; }
   .leaderEmpty{
     font-size: 14px;
     color: rgba(245,240,230,0.8);
@@ -390,7 +401,6 @@
 <header class="top">
   <svg class="fishmark" viewBox="0 0 24 24" fill="none" stroke="#F5F0E6" stroke-width="1"><path d="M3 12c2.5-3.5 6-5.5 10-5.5 4 0 6.5 2 8 5.5-1.5 3.5-4 5.5-8 5.5-4 0-7.5-2-10-5.5z"/><circle cx="8" cy="11" r=".8" fill="#F5F0E6" stroke="none"/></svg>
   <h1>Ahvenkisa</h1>
-  <div class="sub">Nauvo · Välppi (Pasi, Kimmo, Jaska) vs Nymar (Antti, Jani, Ile)</div>
   <div class="leaderBanner" id="leaderBanner"></div>
   <div class="syncLine" id="syncLineTop"><span class="syncDot" id="syncDotTop"></span><span id="syncTextTop">Ei yhteistä tallennusta määritetty</span></div>
 </header>
@@ -600,7 +610,6 @@
     return formatCmNumber(n) + ' cm';
   }
   function pluralKala(n){ return n===1 ? 'kala' : 'kalaa'; }
-  function pluralAhven(n){ return n===1 ? 'ahven' : 'ahventa'; }
   function formatTime(ts){
     return new Date(ts).toLocaleTimeString('fi-FI',{hour:'2-digit',minute:'2-digit'});
   }
@@ -913,18 +922,20 @@
     }).sort(function(a,b){ return b.sum - a.sum; });
   }
   function renderLeader(){
-    var standings = individualStandings().filter(function(s){ return s.count>0; });
+    var standings = individualStandings().filter(function(s){ return s.count>0; }).slice(0,3);
     var wrap = document.getElementById('leaderBanner');
+    wrap.innerHTML = '';
     if(!standings.length){
-      wrap.innerHTML = '';
       wrap.appendChild(el('div','leaderEmpty','Ei vielä saaliita – ensimmäinen ahven avaa tulostaulun.'));
       return;
     }
-    var top = standings[0];
-    wrap.innerHTML = '';
-    wrap.appendChild(el('div','leaderNum', formatCm(top.sum)));
-    var lengths = top.top.map(function(c){ return formatCmNumber(c.length); }).join(', ');
-    wrap.appendChild(el('div','leaderLabel', top.name + ' johtaa · ' + top.count + ' ' + pluralAhven(top.count) + ' kirjattu (' + lengths + ')'));
+    standings.forEach(function(s, i){
+      var row = el('div','leaderRow');
+      row.appendChild(el('div','leaderRank', (i+1)+'.'));
+      row.appendChild(el('div','leaderName', s.name));
+      row.appendChild(el('div','leaderSum', formatCm(s.sum)));
+      wrap.appendChild(row);
+    });
   }
   function renderStandings(){
     var indWrap = document.getElementById('individualStandings');
