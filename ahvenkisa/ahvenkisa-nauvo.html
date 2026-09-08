@@ -63,6 +63,25 @@
     font-weight: 700;
     letter-spacing: 0.2px;
   }
+  .countdown{
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(245,240,230,0.85);
+    display:flex;
+    align-items:baseline;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+  .countdown .cdTime{
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-variant-numeric: tabular-nums;
+    color: var(--sand);
+  }
+  .countdown.running .cdTime{ color: #9ED6A8; }
+  .countdown.after{ color: rgba(245,240,230,0.6); font-weight:500; }
+
   .leaderBanner{
     margin-top: 16px;
     padding-top: 14px;
@@ -233,6 +252,27 @@
     cursor:pointer;
     flex: 0 0 auto;
   }
+  /* Kirjaus lukossa kisa-ajan ulkopuolella */
+  .lockNote{
+    background: rgba(217,178,111,0.18);
+    border: 1px solid rgba(217,178,111,0.55);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .anglerBtn:disabled,
+  .chip:disabled,
+  .secondaryBtn:disabled{
+    opacity: .4;
+    cursor: not-allowed;
+  }
+  .lengthWrap.locked{
+    opacity: .4;
+    background: var(--paper);
+  }
+  .lengthWrap input:disabled{ cursor: not-allowed; }
+
   .msg{
     font-size: 13px;
     color: var(--deep-2);
@@ -471,6 +511,7 @@
     <h1>Ahvenkisa</h1>
     <div class="syncLine" id="syncLineTop"><span class="syncDot" id="syncDotTop"></span><span id="syncTextTop">Ei yhteistä tallennusta määritetty</span></div>
   </div>
+  <div class="countdown" id="countdown"></div>
   <div class="leaderBanner" id="leaderBanner"></div>
 </header>
 
@@ -482,10 +523,11 @@
   <div class="view active" data-view="log">
     <section class="block">
       <h2>Kirjaa kala</h2>
+      <div class="lockNote hidden" id="logLockNote"></div>
 
       <div id="anglerPicker"></div>
 
-      <div class="lengthWrap" style="margin-top:14px;">
+      <div class="lengthWrap" style="margin-top:14px;" id="lengthWrap">
         <input type="number" inputmode="numeric" step="1" min="0" max="150" id="lengthInput" placeholder="0">
         <span>cm</span>
       </div>
@@ -663,6 +705,14 @@
   // Ylläpitäjän PIN kisan nollaukseen. HUOM: tämä on vain vahinkojen esto,
   // ei oikeaa tietoturvaa – koodi on julkinen.
   var ADMIN_PIN = '6431';
+
+  // Kisan kesto. Aikavyöhyke on kirjoitettu auki (+03:00 = Suomen kesäaika),
+  // jotta laitteen aikavyöhykeasetus ei siirrä kisan alkua tai loppua.
+  // Kirjaaminen on auki vain tällä välillä.
+  var COMP_START = new Date('2026-09-12T05:00:00+03:00').getTime();
+  var COMP_END   = new Date('2026-09-12T17:00:00+03:00').getTime();
+  var COMP_START_TEXT = '12.9. klo 5.00';
+  var COMP_END_TEXT   = '12.9. klo 17.00';
 
   // Testiympäristön ohitukset – sallitaan vain paikallisesti, ei julkaistulla sivulla.
   var TEST = (function(){
@@ -1534,7 +1584,67 @@
   }
   function updateSaveEnabled(){
     var len = parseFloat(document.getElementById('lengthInput').value);
-    document.getElementById('saveCatchBtn').disabled = !(selectedAngler && validLength(len));
+    document.getElementById('saveCatchBtn').disabled = !(isLoggingOpen() && selectedAngler && validLength(len));
+  }
+
+  // ---------- Kisa-aika ja laskuri ----------
+  function compPhase(now){
+    now = now || Date.now();
+    if(now < COMP_START) return 'before';
+    if(now >= COMP_END) return 'after';
+    return 'running';
+  }
+  function isLoggingOpen(){ return compPhase() === 'running'; }
+
+  function formatCountdown(ms){
+    var s = Math.max(0, Math.ceil(ms/1000));
+    var d = Math.floor(s/86400); s -= d*86400;
+    var h = Math.floor(s/3600);  s -= h*3600;
+    var m = Math.floor(s/60);    s -= m*60;
+    function two(n){ return n<10 ? '0'+n : String(n); }
+    var clock = two(h)+':'+two(m)+':'+two(s);
+    if(d > 0) return d + (d===1 ? ' pv ' : ' pv ') + clock;
+    return clock;
+  }
+
+  // Kirjauskenttien lukitus. DOM:ia kosketaan vain kun tila oikeasti vaihtuu,
+  // vaikka laskuri päivittyy sekunnin välein.
+  var lockRendered = null;
+  function applyLoggingLock(phase){
+    var open = phase === 'running';
+    if(lockRendered === open) return;
+    lockRendered = open;
+
+    document.querySelectorAll('.anglerBtn').forEach(function(b){ b.disabled = !open; });
+    document.querySelectorAll('#speciesPicker .chip').forEach(function(c){ c.disabled = !open; });
+    document.getElementById('lengthInput').disabled = !open;
+    document.getElementById('photoBtn').disabled = !open;
+    document.getElementById('lengthWrap').classList.toggle('locked', !open);
+
+    var note = document.getElementById('logLockNote');
+    note.classList.toggle('hidden', open);
+    if(!open){
+      note.textContent = (phase === 'before')
+        ? 'Kirjaaminen aukeaa kisan alkaessa ' + COMP_START_TEXT + '.'
+        : 'Kisa päättyi ' + COMP_END_TEXT + ' – uusia saaliita ei voi enää kirjata.';
+    }
+    if(!open) clearPendingPhoto();
+    updateSaveEnabled();
+  }
+
+  function renderCountdown(){
+    var now = Date.now();
+    var phase = compPhase(now);
+    var wrap = document.getElementById('countdown');
+    wrap.className = 'countdown ' + phase;
+    wrap.innerHTML = '';
+    if(phase === 'after'){
+      wrap.appendChild(el('span', null, 'Kisa on päättynyt'));
+    } else {
+      wrap.appendChild(el('span', null, phase === 'before' ? 'Kisan alkuun:' : 'Kisan loppuun:'));
+      wrap.appendChild(el('span', 'cdTime', formatCountdown((phase === 'before' ? COMP_START : COMP_END) - now)));
+    }
+    applyLoggingLock(phase);
   }
 
   function compressImage(file, maxDim, quality){
@@ -1587,6 +1697,14 @@
   function saveCatch(){
     var lenInput = document.getElementById('lengthInput');
     var len = parseFloat(lenInput.value);
+    if(!isLoggingOpen()){
+      var phase = compPhase();
+      flashMsg('logMsg', phase === 'before'
+        ? 'Kisa ei ole vielä alkanut – kirjaaminen aukeaa ' + COMP_START_TEXT + '.'
+        : 'Kisa on päättynyt – uusia saaliita ei voi kirjata.', true);
+      renderCountdown();
+      return;
+    }
     if(!selectedAngler || !validLength(len)) return;
     var boat = boatOfAngler(selectedAngler);
     var c = {
@@ -2291,6 +2409,9 @@
       if(e.key === LS_STATE_KEY || e.key === LS_OUTBOX_KEY) reloadFromStore();
     });
 
+    renderCountdown();
+    setInterval(renderCountdown, 1000);
+
     loadPersisted().then(function(){
       refreshState();
       renderAll();
@@ -2320,6 +2441,7 @@
             };
           },
           statusOf: catchStatus,
+          phase: function(){ return compPhase(); },
           ready: true
         };
       }
