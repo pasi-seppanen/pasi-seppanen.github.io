@@ -21,6 +21,7 @@
     --nymar: #4A6F8C;
     --line: rgba(18,33,31,0.12);
     --muted: #6B7A77;
+    --danger: #8A3B2B;
     --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
     --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
@@ -108,6 +109,15 @@
     font-size: 14px;
     color: rgba(245,240,230,0.8);
     padding: 2px 0 4px;
+  }
+
+  #storageBanner{
+    background: var(--danger);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 10px 16px;
+    text-align: center;
   }
 
   main{
@@ -212,6 +222,17 @@
     font-weight: 600;
     cursor:pointer;
   }
+  .smallBtn{
+    padding: 7px 12px;
+    border-radius: 9px;
+    border: 1.5px solid var(--deep);
+    background: transparent;
+    color: var(--deep);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor:pointer;
+    flex: 0 0 auto;
+  }
   .msg{
     font-size: 13px;
     color: var(--deep-2);
@@ -221,6 +242,7 @@
     transition: opacity .2s ease;
   }
   .msg.show{ opacity:1; }
+  .msg.err{ color: var(--danger); font-weight:600; }
   @media (prefers-reduced-motion: reduce){ .msg{ transition:none; } }
 
   .catchRow{
@@ -242,6 +264,10 @@
     width:36px; height:36px; border-radius:8px; object-fit:cover;
     flex:0 0 auto; cursor:pointer; background: var(--paper);
   }
+  .syncBadge{ font-size: 12px; margin-left: 4px; }
+  .syncBadge.ok{ color:#4F8A5B; }
+  .syncBadge.wait{ color:#B08A3E; }
+  .syncBadge.err{ color: var(--danger); }
   .delBtn{
     border:none; background:transparent; color: var(--muted);
     font-size: 18px; padding: 4px 6px; cursor:pointer; line-height:1;
@@ -347,6 +373,25 @@
   }
   .fileRow input[type=file]{ display:none; }
 
+  .listCard{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 6px 12px;
+    margin-bottom: 10px;
+  }
+  .historyBox{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    max-height: 160px;
+    overflow-y: auto;
+  }
+  .historyBox div{ padding: 2px 0; }
+
   .dangerZone{
     margin-top: 30px;
     padding-top: 16px;
@@ -429,6 +474,8 @@
   <div class="leaderBanner" id="leaderBanner"></div>
 </header>
 
+<div id="storageBanner" class="hidden"></div>
+
 <main>
 
   <!-- LOG CATCH VIEW -->
@@ -503,17 +550,24 @@
     </section>
 
     <section class="block">
+      <h2>Poistetut saaliit</h2>
+      <div class="hint">Poistot ovat palautettavissa niin kauan kuin kisa on käynnissä.</div>
+      <div class="listCard" id="trashList"><div class="empty">Ei poistettuja saaliita.</div></div>
+    </section>
+
+    <section class="block">
       <h2>Varakeinot</h2>
       <div class="hint">Jos yhteys pätkii koko päivän, tulokset voi yhdistää myös käsin jälkikäteen.</div>
       <button class="secondaryBtn" id="exportBtn">Jaa saalistiedot</button>
       <div class="fileRow">
-        <button class="secondaryBtn" id="downloadBtn">Lataa varmuuskopio (.json)</button>
+        <button class="secondaryBtn" id="downloadBtn">Lataa varmuuskopio (.json, sis. kuvat)</button>
       </div>
       <textarea id="exportBox" class="hidden" readonly></textarea>
       <button class="secondaryBtn hidden" id="copyBtn" style="margin-top:8px;">Kopioi leikepöydälle</button>
 
       <textarea id="importBox" placeholder="Liitä toisen laitteen jakama data tähän..." style="margin-top:14px;"></textarea>
-      <button class="secondaryBtn" id="importBtn">Tuo liitetty data</button>
+      <button class="secondaryBtn" id="importBtn">Yhdistä liitetty data</button>
+      <button class="secondaryBtn" id="importRestoreBtn" style="margin-top:8px;">Palauta varmuuskopiosta (ohittaa poistot)</button>
       <div class="fileRow">
         <label for="importFile">Tuo tiedostosta</label>
         <input type="file" id="importFile" accept="application/json,.json">
@@ -521,10 +575,27 @@
       <div class="msg" id="shareMsg"></div>
     </section>
 
+    <section class="block">
+      <h2>Automaattiset varmuuskopiot</h2>
+      <div class="hint">Laite tallentaa ajoittaisia tilannekuvia. Yhdistäminen palauttaa tilannekuvan saaliit myös poistojen ja nollauksen yli.</div>
+      <div class="listCard" id="backupList"><div class="empty">Ei varmuuskopioita vielä.</div></div>
+    </section>
+
+    <section class="block">
+      <h2>Arkistoidut kisat</h2>
+      <div class="hint">Nollattu kisa siirtyy arkistoon eikä katoa.</div>
+      <div class="listCard" id="archiveList"><div class="empty">Ei arkistoituja kisoja.</div></div>
+    </section>
+
+    <section class="block">
+      <h2>Muutoshistoria</h2>
+      <div class="historyBox" id="historyBox"><div>Ei tapahtumia.</div></div>
+    </section>
+
     <div class="dangerZone">
       <h2>Nollaa kisa</h2>
-      <div class="hint">Poistaa kaikkien saaliit – myös yhteisestä tallennuksesta, ei vain tästä laitteesta.</div>
-      <button class="secondaryBtn" id="resetBtn" style="border-color:#8A3B2B; color:#8A3B2B;">Nollaa kaikki saaliit</button>
+      <div class="hint">Siirtää kisan arkistoon ja aloittaa uuden. Vaatii ylläpitäjän PIN-koodin. Ei poista tietoja pysyvästi.</div>
+      <button class="secondaryBtn" id="resetBtn" style="border-color:#8A3B2B; color:#8A3B2B;">Nollaa kisa (PIN)</button>
     </div>
   </div>
 
@@ -571,23 +642,55 @@
 (function(){
   "use strict";
 
-  var STORAGE_KEY = 'ahvenkisa-nauvo-v1';
+  // =====================================================================
+  // Konfiguraatio
+  // =====================================================================
 
-  // Yhteinen tallennus (JSONBin.io) – täytä nämä kaksi ennen julkaisua.
-  // 1) Kirjaudu jsonbin.io, luo uusi Bin, sisällöksi {"catches":[],"deletedIds":[]}, aseta Private.
-  // 2) Luo API Keys -sivulla uusi Access Key, jolla oikeudet vain tähän Biniin (Read + Update).
-  // 3) Liitä Bin ID ja Access Key alle. Jos jätät nämä ennalleen, sovellus toimii vain paikallisesti.
+  var LEGACY_LS_KEY = 'ahvenkisa-nauvo-v1';     // vanhan version localStorage (peilataan yhä)
+  var LS_STATE_KEY  = 'ahvenkisa-v2-state';     // varapolku jos IndexedDB ei toimi
+  var LS_OUTBOX_KEY = 'ahvenkisa-v2-outbox';
+  var DEVICE_KEY    = 'ahvenkisa-device-id';
+  var IDB_NAME      = 'ahvenkisa-nauvo';
+  var LEGACY_COMP   = 'nauvo-legacy';
+
+  // Yhteinen tallennus (JSONBin.io).
   var JSONBIN_ID = '6a96b537f5f4af5e295c1ad2';
   var JSONBIN_KEY = '$2a$10$hj9/23sfFLe1fI1FENoQmusiGCi5hBOquXiIjPq66J17rIp2SmQ8W';
-  var JSONBIN_BASE = 'https://api.jsonbin.io/v3/b/' + JSONBIN_ID;
-  var POLL_INTERVAL_MS = 30000;
 
-  // Kalan kuvat (imgbb.com) – ladataan kuva sinne, ja vain URL tallennetaan
-  // JSONBiniin (pitää synkronoitavan datan pienenä).
+  // Kalan kuvat (imgbb.com) – vain URL synkronoidaan, kuva säilyy myös laitteella.
   var IMGBB_KEY = '93c704bf6a397d0a83f694be85da9d7e';
-  var IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+
+  // Ylläpitäjän PIN kisan nollaukseen. HUOM: tämä on vain vahinkojen esto,
+  // ei oikeaa tietoturvaa – koodi on julkinen.
+  var ADMIN_PIN = '4271';
+
+  // Testiympäristön ohitukset – sallitaan vain paikallisesti, ei julkaistulla sivulla.
+  var TEST = (function(){
+    var h = location.hostname;
+    if(h !== 'localhost' && h !== '127.0.0.1' && location.protocol !== 'file:') return null;
+    var p = new URLSearchParams(location.search);
+    if(!p.get('testapi')) return null;
+    return {
+      api: p.get('testapi'),
+      poll: parseInt(p.get('poll') || '0', 10) || 0,
+      iotimeout: parseInt(p.get('iotimeout') || '0', 10) || 0
+    };
+  })();
+
+  var JSONBIN_BASE   = TEST ? TEST.api + '/v3/b/testbin' : 'https://api.jsonbin.io/v3/b/' + JSONBIN_ID;
+  var IMGBB_UPLOAD_URL = TEST ? TEST.api + '/upload' : 'https://api.imgbb.com/1/upload';
+  var POLL_INTERVAL_MS = (TEST && TEST.poll) || 30000;
+  var IO_TIMEOUT_MS    = (TEST && TEST.iotimeout) || 15000;
+  var PHOTO_TIMEOUT_MS = (TEST && TEST.iotimeout) || 25000;
   var PHOTO_MAX_DIM = 1000;
   var PHOTO_QUALITY = 0.6;
+  var MAX_INPUT_CM = 150;    // mitä käyttäjä saa syöttää (kokonaisina senttimetreinä)
+  var MAX_STORED_CM = 300;   // mitä tallennettu tietue saa sisältää – vanhat
+                             // desimaalipituudet ja isot sivusaaliit eivät saa
+                             // pudota validoinnissa pois
+  var HISTORY_CAP = 200;
+  var ARCHIVE_CAP = 5;
+  var BACKUP_CAP = 12;
 
   var BOATS = [
     {id:'valppi', name:'Välppi', anglers:['Pasi','Kimmo','Jaska']},
@@ -595,26 +698,12 @@
   ];
   var SPECIES = ['Ahven','Hauki','Kuha','Särki','Muu'];
 
-  var state = loadState();
-  var selectedAngler = null;
-  var pendingPhotoDataUrl = null;
-  var selectedSpecies = 'Ahven';
+  // =====================================================================
+  // Aputoiminnot
+  // =====================================================================
 
-  function loadState(){
-    try{
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return {catches:[], deletedIds:[]};
-      var parsed = JSON.parse(raw);
-      if(!parsed || !Array.isArray(parsed.catches)) return {catches:[], deletedIds:[]};
-      if(!Array.isArray(parsed.deletedIds)) parsed.deletedIds = [];
-      return parsed;
-    }catch(e){ return {catches:[], deletedIds:[]}; }
-  }
-  function saveState(){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
-  }
   function isSyncConfigured(){
-    return JSONBIN_ID && JSONBIN_ID.indexOf('PASTE_') !== 0 && JSONBIN_KEY && JSONBIN_KEY.indexOf('PASTE_') !== 0;
+    return !!(JSONBIN_ID && JSONBIN_ID.indexOf('PASTE_') !== 0 && JSONBIN_KEY && JSONBIN_KEY.indexOf('PASTE_') !== 0);
   }
   function boatOfAngler(name){
     for(var i=0;i<BOATS.length;i++){ if(BOATS[i].anglers.indexOf(name)!==-1) return BOATS[i]; }
@@ -624,14 +713,21 @@
     if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
     return 'c'+Date.now()+'-'+Math.random().toString(36).slice(2,9);
   }
+  function getDeviceId(){
+    try{
+      var id = localStorage.getItem(DEVICE_KEY);
+      if(!id){ id = makeId(); localStorage.setItem(DEVICE_KEY, id); }
+      return id;
+    }catch(e){ return 'mem-'+makeId(); }
+  }
+  var DEVICE_ID = getDeviceId();
+
   function formatCmNumber(n){
     var rounded = Math.round(n*10)/10;
     var str = (Math.abs(rounded % 1) < 0.001) ? rounded.toFixed(0) : rounded.toFixed(1);
     return str.replace('.',',');
   }
-  function formatCm(n){
-    return formatCmNumber(n) + ' cm';
-  }
+  function formatCm(n){ return formatCmNumber(n) + ' cm'; }
   function pluralKala(n){ return n===1 ? 'kala' : 'kalaa'; }
   function formatTime(ts){
     return new Date(ts).toLocaleTimeString('fi-FI',{hour:'2-digit',minute:'2-digit'});
@@ -645,101 +741,756 @@
     if(text!==undefined) e.textContent = text;
     return e;
   }
-  function flashMsg(id, text){
+  function flashMsg(id, text, isError){
     var e = document.getElementById(id);
     e.textContent = text;
+    e.classList.toggle('err', !!isError);
     e.classList.add('show');
     clearTimeout(e._t);
-    e._t = setTimeout(function(){ e.classList.remove('show'); }, 4500);
+    e._t = setTimeout(function(){ e.classList.remove('show'); }, isError ? 9000 : 4500);
+  }
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+  function timeoutFetch(url, opts, ms){
+    var ctrl = new AbortController();
+    var t = setTimeout(function(){ ctrl.abort(); }, ms);
+    opts = opts || {};
+    opts.signal = ctrl.signal;
+    return fetch(url, opts).finally(function(){ clearTimeout(t); });
   }
 
-  // ---------- Shared storage sync ----------
-  var lastSyncTime = null;
-  var syncing = false;
+  // Vakaa kanoninen sarjallistus vertailuun (korjaa "vertaa vain pituuksia" -vian).
+  function canonical(v){
+    if(v === null || typeof v !== 'object') return JSON.stringify(v);
+    if(Array.isArray(v)) return '[' + v.map(canonical).join(',') + ']';
+    var keys = Object.keys(v).sort();
+    return '{' + keys.map(function(k){ return JSON.stringify(k)+':'+canonical(v[k]); }).join(',') + '}';
+  }
+
+  // =====================================================================
+  // Tietomalli ja validointi
+  // =====================================================================
+  //
+  // Skeema v2 (paikallisesti ja JSONBinissä):
+  // {
+  //   schemaVersion: 2,
+  //   competitionId: 'nauvo-<ts>' | 'nauvo-legacy',
+  //   catches:    [ {id, angler, boat, species, length, time, photoUrl?, restoredAt?} ],
+  //   tombstones: [ {catch:{...koko tietue...}, deletedAt} ],   // palautettavat poistot
+  //   archives:   [ {competitionId, archivedAt, catches, tombstones} ],
+  //   history:    [ {op, id?, angler?, length?, at} ]
+  // }
+  // Elossa/poistettu ratkeaa tunnisteittain: poistettu jos tombstone.deletedAt >
+  // (catch.restoredAt||0). Uudempi palautus voittaa siis vanhemman poiston.
+  // JSONBiniin kirjoitetaan lisäksi deletedIds-peili vanhoja sovellusversioita varten.
+
+  function emptyState(){
+    return {schemaVersion:2, competitionId:LEGACY_COMP, catches:[], tombstones:[], archives:[], history:[]};
+  }
+  function validCatch(c){
+    return !!(c && typeof c==='object' &&
+      typeof c.id==='string' && c.id.length>0 && c.id.length<200 &&
+      typeof c.angler==='string' && c.angler.length>0 && c.angler.length<100 &&
+      typeof c.species==='string' && c.species.length>0 && c.species.length<100 &&
+      typeof c.length==='number' && isFinite(c.length) && c.length>0 && c.length<=MAX_STORED_CM &&
+      typeof c.time==='number' && isFinite(c.time));
+  }
+  function validTombstone(t){
+    return !!(t && typeof t==='object' && t.catch && typeof t.catch.id==='string' && t.catch.id.length>0 &&
+      typeof t.deletedAt==='number' && isFinite(t.deletedAt));
+  }
+  function compTs(compId){
+    if(typeof compId!=='string') return 0;
+    var m = compId.match(/-(\d+)$/);
+    return m ? parseInt(m[1],10) : 0;
+  }
+
+  // Normalisoi palvelimen (tai tuonnin) dokumentti v2-tilaksi. Heittää virheen,
+  // jos rakenne ei kelpaa – virheellistä vastausta EI koskaan tulkita tyhjäksi
+  // kisaksi eikä kirjoiteta sen päälle.
+  function normalizeDoc(data){
+    if(!data || typeof data !== 'object' || Array.isArray(data)){
+      throw new Error('kelvoton dokumentti');
+    }
+    if(data.schemaVersion === 2){
+      if(!Array.isArray(data.catches) || !Array.isArray(data.tombstones)) throw new Error('kelvoton v2-dokumentti');
+      var s = emptyState();
+      s.competitionId = (typeof data.competitionId==='string' && data.competitionId) ? data.competitionId : LEGACY_COMP;
+      s.catches = data.catches.filter(validCatch).map(clone);
+      s.tombstones = data.tombstones.filter(validTombstone).map(clone);
+      s.archives = Array.isArray(data.archives) ? data.archives.filter(function(a){
+        return a && typeof a.competitionId==='string';
+      }).map(function(a){
+        return {
+          competitionId: a.competitionId,
+          archivedAt: typeof a.archivedAt==='number' ? a.archivedAt : 0,
+          catches: (Array.isArray(a.catches)?a.catches:[]).filter(validCatch).map(clone),
+          tombstones: (Array.isArray(a.tombstones)?a.tombstones:[]).filter(validTombstone).map(clone)
+        };
+      }) : [];
+      s.history = Array.isArray(data.history) ? data.history.filter(function(h){
+        return h && typeof h.op==='string' && typeof h.at==='number';
+      }).map(clone) : [];
+      return s;
+    }
+    // vanha skeema v1
+    if(Array.isArray(data.catches)){
+      var s1 = emptyState();
+      s1.catches = data.catches.filter(validCatch).map(clone);
+      var dIds = Array.isArray(data.deletedIds) ? data.deletedIds : [];
+      s1.tombstones = dIds.filter(function(id){ return typeof id==='string' && id; })
+        .map(function(id){ return {catch:{id:id}, deletedAt:1}; });
+      // v1-poisto poistaa myös catch-listalta
+      var dSet = {};
+      s1.tombstones.forEach(function(t){ dSet[t.catch.id]=true; });
+      s1.catches = s1.catches.filter(function(c){ return !dSet[c.id]; });
+      return s1;
+    }
+    throw new Error('tuntematon dokumenttimuoto');
+  }
+
+  function mergeCatchInto(map, c){
+    var e = map[c.id];
+    if(!e){ map[c.id] = clone(c); return; }
+    if((c.restoredAt||0) > (e.restoredAt||0)) e.restoredAt = c.restoredAt;
+    if(c.photoUrl && !e.photoUrl) e.photoUrl = c.photoUrl;
+  }
+  function mergeTombInto(map, t){
+    var id = t.catch.id;
+    var e = map[id];
+    if(!e){ map[id] = clone(t); return; }
+    if(t.deletedAt > e.deletedAt) e.deletedAt = t.deletedAt;
+    if(t.catch.angler && !e.catch.angler) e.catch = clone(t.catch);
+  }
+
+  // Determistinen yhdistäminen: molempien osapuolten tiedot säilyvät, poisto/
+  // palautus ratkaistaan aikaleimoin, kisan vaihdossa hävinneen osapuolen
+  // aktiiviset saaliit arkistoituvat (eivät katoa).
+  function mergeStates(a, b){
+    var comp = compTs(a.competitionId) >= compTs(b.competitionId) ? a.competitionId : b.competitionId;
+
+    var arch = {};
+    function addArch(entry){
+      if(!entry || typeof entry.competitionId!=='string') return;
+      var t = arch[entry.competitionId] || (arch[entry.competitionId] = {competitionId:entry.competitionId, archivedAt:0, catches:{}, tombstones:{}});
+      if((entry.archivedAt||0) > t.archivedAt) t.archivedAt = entry.archivedAt||0;
+      (entry.catches||[]).forEach(function(c){ if(validCatch(c)) mergeCatchInto(t.catches, c); });
+      (entry.tombstones||[]).forEach(function(ts){ if(validTombstone(ts)) mergeTombInto(t.tombstones, ts); });
+    }
+    (a.archives||[]).forEach(addArch);
+    (b.archives||[]).forEach(addArch);
+    [a,b].forEach(function(s){
+      if(s.competitionId !== comp){
+        addArch({competitionId:s.competitionId, archivedAt:Date.now(), catches:s.catches, tombstones:s.tombstones});
+      }
+    });
+    delete arch[comp];
+
+    var catches = {}, tombs = {};
+    [a,b].forEach(function(s){
+      if(s.competitionId !== comp) return;
+      (s.catches||[]).forEach(function(c){ mergeCatchInto(catches, c); });
+      (s.tombstones||[]).forEach(function(t){ mergeTombInto(tombs, t); });
+    });
+
+    var aliveList = [], tombList = [];
+    var ids = {};
+    Object.keys(catches).forEach(function(id){ ids[id]=true; });
+    Object.keys(tombs).forEach(function(id){ ids[id]=true; });
+    Object.keys(ids).forEach(function(id){
+      var c = catches[id], t = tombs[id];
+      if(t && (!c || t.deletedAt > (c.restoredAt||0))){
+        if(c && !t.catch.angler) t = {catch:clone(c), deletedAt:t.deletedAt};
+        tombList.push(t);
+      } else if(c){
+        aliveList.push(c);
+      }
+    });
+
+    var histSeen = {};
+    var hist = [];
+    (a.history||[]).concat(b.history||[]).forEach(function(h){
+      var k = h.at + '|' + h.op + '|' + (h.id||'');
+      if(histSeen[k]) return;
+      histSeen[k] = true;
+      hist.push(clone(h));
+    });
+    hist.sort(function(x,y){ return x.at - y.at; });
+    if(hist.length > HISTORY_CAP) hist = hist.slice(hist.length - HISTORY_CAP);
+
+    var archArr = Object.keys(arch).map(function(k){
+      var t = arch[k];
+      var innerCatches = [], innerTombs = [];
+      var innerIds = {};
+      Object.keys(t.catches).forEach(function(id){ innerIds[id]=true; });
+      Object.keys(t.tombstones).forEach(function(id){ innerIds[id]=true; });
+      Object.keys(innerIds).forEach(function(id){
+        var c = t.catches[id], ts = t.tombstones[id];
+        if(ts && (!c || ts.deletedAt > (c.restoredAt||0))){
+          if(c && !ts.catch.angler) ts = {catch:clone(c), deletedAt:ts.deletedAt};
+          innerTombs.push(ts);
+        } else if(c){ innerCatches.push(c); }
+      });
+      return {competitionId:t.competitionId, archivedAt:t.archivedAt, catches:innerCatches, tombstones:innerTombs};
+    });
+    archArr.sort(function(x,y){ return y.archivedAt - x.archivedAt; });
+    if(archArr.length > ARCHIVE_CAP) archArr = archArr.slice(0, ARCHIVE_CAP);
+
+    return {schemaVersion:2, competitionId:comp, catches:aliveList, tombstones:tombList, archives:archArr, history:hist};
+  }
+
+  // Kanoninen esitys muutosvertailuun; sisältöjärjestys ei vaikuta.
+  function canonicalDoc(s){
+    function sortC(list){ return clone(list).sort(function(x,y){ return x.id<y.id?-1:x.id>y.id?1:0; }); }
+    function sortT(list){ return clone(list).sort(function(x,y){ return x.catch.id<y.catch.id?-1:x.catch.id>y.catch.id?1:0; }); }
+    return canonical({
+      competitionId: s.competitionId,
+      catches: sortC(s.catches),
+      tombstones: sortT(s.tombstones),
+      archives: clone(s.archives).sort(function(x,y){ return x.competitionId<y.competitionId?-1:1; }).map(function(a){
+        return {competitionId:a.competitionId, archivedAt:a.archivedAt, catches:sortC(a.catches), tombstones:sortT(a.tombstones)};
+      }),
+      history: clone(s.history).sort(function(x,y){ return x.at-y.at || (x.id||'').localeCompare(y.id||''); })
+    });
+  }
+
+  function pushDoc(s, rev){
+    var d = clone(s);
+    d.rev = rev;
+    d.updatedAt = Date.now();
+    d.lastWriter = DEVICE_ID;
+    d.deletedIds = s.tombstones.map(function(t){ return t.catch.id; }); // peili vanhoille versioille
+    return d;
+  }
+
+  // =====================================================================
+  // Paikallinen pysyvä tallennus: IndexedDB, varalla localStorage
+  // =====================================================================
+
+  var storageMode = 'idb'; // 'idb' | 'ls' | 'memory'
+  var idb = null;
+
+  function openIdb(){
+    return new Promise(function(resolve, reject){
+      var req;
+      try{ req = indexedDB.open(IDB_NAME, 1); }
+      catch(e){ reject(e); return; }
+      req.onupgradeneeded = function(){
+        var db = req.result;
+        if(!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
+        if(!db.objectStoreNames.contains('outbox')) db.createObjectStore('outbox', {keyPath:'opId'});
+        if(!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', {keyPath:'catchId'});
+        if(!db.objectStoreNames.contains('backups')) db.createObjectStore('backups', {keyPath:'at'});
+      };
+      req.onsuccess = function(){ resolve(req.result); };
+      req.onerror = function(){ reject(req.error || new Error('idb open failed')); };
+      req.onblocked = function(){ reject(new Error('idb blocked')); };
+    });
+  }
+  function idbReq(r){
+    return new Promise(function(resolve, reject){
+      r.onsuccess = function(){ resolve(r.result); };
+      r.onerror = function(){ reject(r.error); };
+    });
+  }
+  function idbTxnDone(t){
+    return new Promise(function(resolve, reject){
+      t.oncomplete = function(){ resolve(); };
+      t.onerror = function(){ reject(t.error || new Error('txn error')); };
+      t.onabort = function(){ reject(t.error || new Error('txn aborted')); };
+    });
+  }
+  function idbGetAll(store){
+    var t = idb.transaction([store],'readonly');
+    return idbReq(t.objectStore(store).getAll());
+  }
+
+  // Muisti: perustila (viimeisin vahvistettu/yhteensulautettu) + lähetysjono.
+  var base = emptyState();
+  var outbox = [];           // pysyvästi tallennetut, lähetystä odottavat operaatiot
+  var memoryOnlyOps = [];    // operaatiot, joiden tallennus laitteelle EPÄONNISTUI
+  var photos = {};           // catchId -> {catchId, dataUrl, uploadedUrl, attempts, lastError}
+  var confirmedIds = {};     // palvelimen viimeksi vahvistetut tunnisteet
+  var state = emptyState();  // johdettu näkymätila (base + jonon operaatiot)
+
+  var bc = null;
+  try{ bc = new BroadcastChannel('ahvenkisa'); }catch(e){}
+
+  function legacyMirror(s){
+    // Kirjoitetaan myös vanhan version muoto, jotta sovellusversion vaihto
+    // taaksepäin ei hävitä dataa. Virhe tässä ei ole vakava.
+    try{
+      localStorage.setItem(LEGACY_LS_KEY, JSON.stringify({
+        catches: s.catches,
+        deletedIds: s.tombstones.map(function(t){ return t.catch.id; })
+      }));
+    }catch(e){}
+  }
+
+  function persistBase(s){
+    base = s;
+    legacyMirror(s);
+    if(storageMode === 'idb'){
+      var t = idb.transaction(['kv'],'readwrite');
+      t.objectStore('kv').put(clone(s), 'state');
+      return idbTxnDone(t);
+    }
+    if(storageMode === 'ls'){
+      return new Promise(function(resolve, reject){
+        try{ localStorage.setItem(LS_STATE_KEY, JSON.stringify(s)); resolve(); }
+        catch(e){ reject(e); }
+      });
+    }
+    // muistitila: perustila elää vain muistissa, mutta se ei saa estää synkkaa
+    return Promise.resolve();
+  }
+  function persistOutboxLs(){
+    try{ localStorage.setItem(LS_OUTBOX_KEY, JSON.stringify(outbox)); return Promise.resolve(); }
+    catch(e){ return Promise.reject(e); }
+  }
+
+  // Tallentaa operaation (+ mahdollisen kuvan) YHDESSÄ transaktiossa ennen kuin
+  // käyttäjälle ilmoitetaan onnistumisesta.
+  function persistOp(op, photoRec){
+    if(storageMode === 'idb'){
+      var stores = photoRec ? ['outbox','photos'] : ['outbox'];
+      var t = idb.transaction(stores,'readwrite');
+      t.objectStore('outbox').put(clone(op));
+      if(photoRec) t.objectStore('photos').put(clone(photoRec));
+      return idbTxnDone(t).then(function(){
+        outbox.push(op);
+        if(photoRec) photos[photoRec.catchId] = photoRec;
+      });
+    }
+    if(storageMode === 'ls'){
+      outbox.push(op);
+      if(photoRec) photos[photoRec.catchId] = photoRec;
+      return persistOutboxLs().catch(function(e){
+        outbox = outbox.filter(function(o){ return o.opId !== op.opId; });
+        if(photoRec) delete photos[photoRec.catchId];
+        throw e;
+      });
+    }
+    return Promise.reject(new Error('ei pysyvää tallennusta'));
+  }
+  function persistOpUpdate(op){
+    if(storageMode === 'idb'){
+      var t = idb.transaction(['outbox'],'readwrite');
+      t.objectStore('outbox').put(clone(op));
+      return idbTxnDone(t).catch(function(){});
+    }
+    if(storageMode === 'ls') return persistOutboxLs().catch(function(){});
+    return Promise.resolve();
+  }
+  function deleteOps(opIds){
+    if(!opIds.length) return Promise.resolve();
+    outbox = outbox.filter(function(o){ return opIds.indexOf(o.opId) === -1; });
+    if(storageMode === 'idb'){
+      var t = idb.transaction(['outbox'],'readwrite');
+      opIds.forEach(function(id){ t.objectStore('outbox').delete(id); });
+      return idbTxnDone(t).catch(function(){});
+    }
+    if(storageMode === 'ls') return persistOutboxLs().catch(function(){});
+    return Promise.resolve();
+  }
+  function persistPhoto(rec){
+    photos[rec.catchId] = rec;
+    if(storageMode === 'idb'){
+      var t = idb.transaction(['photos'],'readwrite');
+      t.objectStore('photos').put(clone(rec));
+      return idbTxnDone(t).catch(function(){});
+    }
+    return Promise.resolve();
+  }
+
+  function addBackup(doc){
+    if(storageMode !== 'idb') return Promise.resolve();
+    var rec = {at: Date.now(), doc: clone(doc)};
+    var t = idb.transaction(['backups'],'readwrite');
+    var store = t.objectStore('backups');
+    store.put(rec);
+    return idbTxnDone(t).then(function(){
+      return idbGetAll('backups');
+    }).then(function(all){
+      all.sort(function(a,b){ return a.at-b.at; });
+      if(all.length > BACKUP_CAP){
+        var t2 = idb.transaction(['backups'],'readwrite');
+        all.slice(0, all.length-BACKUP_CAP).forEach(function(r){ t2.objectStore('backups').delete(r.at); });
+        return idbTxnDone(t2);
+      }
+    }).catch(function(){});
+  }
+  function listBackups(){
+    if(storageMode !== 'idb') return Promise.resolve([]);
+    return idbGetAll('backups').then(function(all){
+      all.sort(function(a,b){ return b.at-a.at; });
+      return all;
+    }).catch(function(){ return []; });
+  }
+
+  function notifyOtherTabs(){
+    if(bc){ try{ bc.postMessage({t:'update'}); }catch(e){} }
+  }
+  function reloadFromStore(){
+    if(storageMode !== 'idb') return Promise.resolve();
+    return Promise.all([
+      idbReq(idb.transaction(['kv'],'readonly').objectStore('kv').get('state')),
+      idbGetAll('outbox'),
+      idbGetAll('photos')
+    ]).then(function(res){
+      if(res[0]) base = normalizeDoc(res[0]);
+      outbox = res[1] || [];
+      photos = {};
+      (res[2]||[]).forEach(function(p){ photos[p.catchId] = p; });
+      refreshState();
+      renderAll();
+      renderSyncStatus();
+    }).catch(function(){});
+  }
+
+  // =====================================================================
+  // Operaatiot ja johdettu tila
+  // =====================================================================
+
+  function applyOpTo(s, op){
+    if(op.type === 'add'){
+      if(op.comp === s.competitionId){
+        var m = {}; s.catches.forEach(function(c){ m[c.id]=c; });
+        if(!m[op.catch.id]){
+          var dead = s.tombstones.some(function(t){ return t.catch.id===op.catch.id && t.deletedAt > (op.catch.restoredAt||0); });
+          if(!dead) s.catches.push(clone(op.catch));
+        }
+      } else {
+        // kisa on jo vaihtunut – saalis kuuluu arkistoon
+        var a = null;
+        s.archives.forEach(function(x){ if(x.competitionId===op.comp) a=x; });
+        if(!a){ a = {competitionId:op.comp, archivedAt:Date.now(), catches:[], tombstones:[]}; s.archives.push(a); }
+        if(!a.catches.some(function(c){ return c.id===op.catch.id; })) a.catches.push(clone(op.catch));
+      }
+    } else if(op.type === 'delete'){
+      if(op.comp === s.competitionId){
+        s.catches = s.catches.filter(function(c){ return c.id !== op.catch.id; });
+        var ex = null;
+        s.tombstones.forEach(function(t){ if(t.catch.id===op.catch.id) ex=t; });
+        if(ex){ if(op.deletedAt > ex.deletedAt) ex.deletedAt = op.deletedAt; }
+        else s.tombstones.push({catch:clone(op.catch), deletedAt:op.deletedAt});
+      }
+    } else if(op.type === 'restore'){
+      if(op.comp === s.competitionId){
+        s.tombstones = s.tombstones.filter(function(t){
+          return !(t.catch.id===op.catch.id && t.deletedAt <= (op.catch.restoredAt||0));
+        });
+        var still = s.tombstones.some(function(t){ return t.catch.id===op.catch.id; });
+        if(!still && !s.catches.some(function(c){ return c.id===op.catch.id; })){
+          s.catches.push(clone(op.catch));
+        }
+      }
+    } else if(op.type === 'reset'){
+      if(compTs(s.competitionId) < compTs(op.newCompetitionId)){
+        s.archives.unshift({competitionId:s.competitionId, archivedAt:op.archivedAt, catches:s.catches, tombstones:s.tombstones});
+        if(s.archives.length > ARCHIVE_CAP) s.archives = s.archives.slice(0, ARCHIVE_CAP);
+        s.competitionId = op.newCompetitionId;
+        s.catches = [];
+        s.tombstones = [];
+      }
+    }
+    return s;
+  }
+
+  function refreshState(){
+    var s = clone(base);
+    outbox.concat(memoryOnlyOps).forEach(function(op){ applyOpTo(s, op); });
+    state = s;
+  }
+
+  // Onko operaation vaikutus näkyvissä palvelimen dokumentissa?
+  function opConfirmedBy(doc, op){
+    function anywhere(id){
+      if(doc.catches.some(function(c){ return c.id===id; })) return true;
+      if(doc.tombstones.some(function(t){ return t.catch.id===id; })) return true;
+      return doc.archives.some(function(a){
+        return a.catches.some(function(c){ return c.id===id; }) ||
+               a.tombstones.some(function(t){ return t.catch.id===id; });
+      });
+    }
+    if(op.type === 'add') return anywhere(op.catch.id);
+    if(op.type === 'delete'){
+      var alive = null;
+      doc.catches.forEach(function(c){ if(c.id===op.catch.id) alive=c; });
+      if(alive && (alive.restoredAt||0) < op.deletedAt) return false; // poisto ei vielä perillä
+      return true;
+    }
+    if(op.type === 'restore'){
+      var t = null;
+      doc.tombstones.forEach(function(x){ if(x.catch.id===op.catch.id) t=x; });
+      if(t && t.deletedAt <= (op.catch.restoredAt||0)) return false; // palautus ei vielä perillä
+      return true;
+    }
+    if(op.type === 'reset'){
+      return compTs(doc.competitionId) >= compTs(op.newCompetitionId);
+    }
+    return true;
+  }
+
+  function pendingCounts(){
+    var ops = outbox.length + memoryOnlyOps.length;
+    var ph = 0;
+    Object.keys(photos).forEach(function(id){ if(!photos[id].uploadedUrl) ph++; });
+    return {ops: ops, photos: ph};
+  }
+  function catchStatus(id){
+    if(memoryOnlyOps.some(function(o){ return o.type==='add' && o.catch.id===id; })) return 'error';
+    var op = null;
+    outbox.forEach(function(o){ if(o.type==='add' && o.catch.id===id) op=o; });
+    if(op){
+      if(op.attempts >= 3 && op.lastError) return 'error';
+      return 'pending';
+    }
+    if(confirmedIds[id]) return 'confirmed';
+    return 'pending';
+  }
+
+  // =====================================================================
+  // Synkronointimoottori
+  // =====================================================================
+
+  var syncState = { phase:'idle', lastOkAt:null, lastError:null, lastErrorAt:null, fails:0 };
+  var nextAllowedAt = 0;
+  var flushRunning = false;
+  var currentFlush = Promise.resolve();
+  var lastBackupAt = 0;
+  var lastBackupCanon = '';
+
+  function headers(extra){
+    var h = extra || {};
+    if(!TEST) h['X-Access-Key'] = JSONBIN_KEY;
+    return h;
+  }
+
+  function fetchRemoteDoc(){
+    return timeoutFetch(JSONBIN_BASE + '?meta=false', { headers: headers() }, IO_TIMEOUT_MS)
+      .then(function(res){
+        if(!res.ok) throw new Error('haku epäonnistui: '+res.status);
+        return res.json().catch(function(){ throw new Error('palvelimen vastaus ei ollut JSON-muotoa'); });
+      })
+      .then(function(data){ return normalizeDoc(data); });
+  }
+  function putRemoteDoc(doc){
+    return timeoutFetch(JSONBIN_BASE, {
+      method:'PUT',
+      headers: headers({'Content-Type':'application/json'}),
+      body: JSON.stringify(doc)
+    }, IO_TIMEOUT_MS).then(function(res){
+      if(!res.ok) throw new Error('lähetys epäonnistui: '+res.status);
+    });
+  }
+
+  function uploadPhotoData(dataUrl){
+    var base64 = dataUrl.split(',')[1];
+    var body = new URLSearchParams();
+    body.append('image', base64);
+    var url = TEST ? IMGBB_UPLOAD_URL : IMGBB_UPLOAD_URL + '?key=' + IMGBB_KEY;
+    return timeoutFetch(url, { method:'POST', body: body }, PHOTO_TIMEOUT_MS)
+      .then(function(res){ return res.json(); })
+      .then(function(json){
+        if(json && json.success && json.data && json.data.url) return json.data.url;
+        throw new Error('kuvapalvelu hylkäsi latauksen');
+      });
+  }
+
+  function uploadPendingPhotos(){
+    var recs = Object.keys(photos).map(function(k){ return photos[k]; })
+      .filter(function(p){ return !p.uploadedUrl && p.dataUrl; });
+    var chain = Promise.resolve();
+    recs.forEach(function(rec){
+      chain = chain.then(function(){
+        return uploadPhotoData(rec.dataUrl).then(function(url){
+          rec.uploadedUrl = url;
+          rec.lastError = null;
+          // liitä URL saaliille jonossa ja perustilassa
+          var found = false;
+          outbox.forEach(function(op){
+            if(op.type==='add' && op.catch.id===rec.catchId && !op.catch.photoUrl){
+              op.catch.photoUrl = url;
+              found = true;
+              persistOpUpdate(op);
+            }
+          });
+          base.catches.forEach(function(c){
+            if(c.id===rec.catchId && !c.photoUrl){ c.photoUrl = url; found = true; }
+          });
+          if(found) persistBase(base);
+          return persistPhoto(rec);
+        }).catch(function(e){
+          rec.attempts = (rec.attempts||0)+1;
+          rec.lastError = String(e && e.message || e);
+          return persistPhoto(rec);
+        });
+      });
+    });
+    return chain;
+  }
+
+  function syncOnce(){
+    return fetchRemoteDoc().then(function(remote){
+      refreshState();
+      var merged = mergeStates(state, remote);
+      var mergedCanon = canonicalDoc(merged);
+      var pushNeeded = mergedCanon !== canonicalDoc(remote);
+      var step = Promise.resolve(remote);
+      if(pushNeeded){
+        step = putRemoteDoc(pushDoc(merged, Date.now()))
+          .then(function(){ return fetchRemoteDoc(); }); // varmistushaku
+      }
+      return step.then(function(verifyDoc){
+        // Vahvistus: operaatio poistuu jonosta vasta kun sen vaikutus on
+        // luettu takaisin palvelimelta. PUT:n kadonnut vastaus ei siksi
+        // aiheuta kaksoiskirjausta eikä hukkaa mitään.
+        var confirmed = outbox.filter(function(op){ return opConfirmedBy(verifyDoc, op); });
+        // Myös vain muistiin jääneet operaatiot vapautuvat, kun palvelin on ne
+        // vahvistanut – muuten ne jäisivät ikuisesti virhetilaan.
+        memoryOnlyOps = memoryOnlyOps.filter(function(op){ return !opConfirmedBy(verifyDoc, op); });
+        var mergedAfter = mergeStates(state, verifyDoc);
+        confirmedIds = {};
+        verifyDoc.catches.forEach(function(c){ confirmedIds[c.id]=true; });
+        verifyDoc.tombstones.forEach(function(t){ confirmedIds[t.catch.id]=true; });
+        verifyDoc.archives.forEach(function(a){
+          a.catches.forEach(function(c){ confirmedIds[c.id]=true; });
+          a.tombstones.forEach(function(t){ confirmedIds[t.catch.id]=true; });
+        });
+        return deleteOps(confirmed.map(function(o){ return o.opId; }))
+          .then(function(){ return persistBase(mergedAfter); })
+          .then(function(){
+            refreshState();
+            // Varmuuskopio jokaisesta sisältömuutoksesta, jotta tuorein
+            // tilannekuva on aina ajan tasalla. Tyhjää tilaa ei kopioida (siitä
+            // ei ole palautuksessa hyötyä), ja vanhimmat karsiutuvat
+            // BACKUP_CAP-rajan mukaan.
+            var canon = canonicalDoc(mergedAfter);
+            if(mergedAfter.catches.length > 0 && canon !== lastBackupCanon){
+              lastBackupAt = Date.now();
+              lastBackupCanon = canon;
+              addBackup(mergedAfter);
+            }
+            notifyOtherTabs();
+          });
+      });
+    });
+  }
+
+  function doFlush(){
+    if(!isSyncConfigured()){ renderSyncStatus(); return Promise.resolve(); }
+    // Jos synkka on jo käynnissä, palautetaan sama lupaus – odottaja ei saa
+    // luulla lähetystä valmiiksi ennen kuin se oikeasti on.
+    if(flushRunning) return currentFlush;
+    flushRunning = true;
+    syncState.phase = 'syncing';
+    renderSyncStatus();
+    currentFlush = uploadPendingPhotos()
+      .then(function(){ return syncOnce(); })
+      .then(function(){
+        syncState.phase = 'idle';
+        syncState.lastOkAt = Date.now();
+        syncState.lastError = null;
+        syncState.fails = 0;
+        nextAllowedAt = 0;
+      })
+      .catch(function(e){
+        syncState.phase = 'idle';
+        syncState.lastError = String(e && e.message || e);
+        syncState.lastErrorAt = Date.now();
+        syncState.fails++;
+        outbox.forEach(function(op){
+          op.attempts = (op.attempts||0)+1;
+          op.lastError = syncState.lastError;
+        });
+        var delay = Math.min(60000, 1000 * Math.pow(2, Math.min(syncState.fails, 6))) + Math.random()*500;
+        nextAllowedAt = Date.now() + delay;
+      })
+      .then(function(){
+        flushRunning = false;
+        renderAll();
+        renderSyncStatus();
+      });
+    return currentFlush;
+  }
+
+  function flushNow(force){
+    if(force) nextAllowedAt = 0;
+    if(Date.now() < nextAllowedAt) return Promise.resolve();
+    if(navigator.locks && navigator.locks.request){
+      return navigator.locks.request('ahvenkisa-flush', {ifAvailable:true}, function(lock){
+        // Lukko varattu: joko toinen välilehti hoitaa (silloin currentFlush on jo
+        // ratkennut ja palataan heti) tai tämän välilehden oma synkka on kesken,
+        // jolloin odotetaan se loppuun – kutsuja ei saa luulla työtä tehdyksi.
+        if(!lock) return currentFlush;
+        return doFlush();
+      }).catch(function(){ return doFlush(); });
+    }
+    return doFlush();
+  }
+
+  // =====================================================================
+  // Tilanäytöt
+  // =====================================================================
 
   function setSyncStatus(kind, text){
-    var dotIds = ['syncDotTop','syncDotPanel'];
-    var textIds = ['syncTextTop','syncTextPanel'];
-    dotIds.forEach(function(id){
+    ['syncDotTop','syncDotPanel'].forEach(function(id){
       var d = document.getElementById(id);
       if(d) d.className = 'syncDot' + (kind ? ' '+kind : '');
     });
-    textIds.forEach(function(id){
+    ['syncTextTop','syncTextPanel'].forEach(function(id){
       var t = document.getElementById(id);
       if(t) t.textContent = text;
     });
   }
+  function pendingText(pc){
+    var parts = [];
+    if(pc.ops) parts.push(pc.ops + ' ' + (pc.ops===1?'saalis':'saalista'));
+    if(pc.photos) parts.push(pc.photos + ' ' + (pc.photos===1?'kuva':'kuvaa'));
+    return parts.join(' ja ') + ' odottaa lähetystä';
+  }
   function renderSyncStatus(){
+    var pc = pendingCounts();
     if(!isSyncConfigured()){
-      setSyncStatus('', 'Ei yhteistä tallennusta määritetty');
+      setSyncStatus('', 'Ei yhteistä tallennusta määritetty' + (pc.ops ? ' · '+pc.ops+' tallennettu laitteelle' : ''));
       return;
     }
-    if(syncing){
+    if(syncState.phase === 'syncing'){
       setSyncStatus('syncing', 'Synkronoidaan…');
-    } else if(lastSyncTime){
-      setSyncStatus('ok', 'Synkronoitu klo ' + formatTime(lastSyncTime));
+      return;
+    }
+    if(syncState.lastError){
+      var txt = 'Yhteysvirhe';
+      if(pc.ops || pc.photos) txt += ' – ' + pendingText(pc);
+      else if(syncState.lastOkAt) txt += ' – viimeisin onnistunut klo ' + formatTime(syncState.lastOkAt);
+      setSyncStatus('error', txt);
+      return;
+    }
+    if(pc.ops || pc.photos){
+      setSyncStatus('syncing', pendingText(pc));
+      return;
+    }
+    if(syncState.lastOkAt){
+      setSyncStatus('ok', 'Vahvistettu palvelimella klo ' + formatTime(syncState.lastOkAt));
     } else {
       setSyncStatus('error', 'Ei vielä yhteyttä');
     }
   }
-  function fetchRemote(){
-    return fetch(JSONBIN_BASE + '?meta=false', {
-      headers: { 'X-Access-Key': JSONBIN_KEY }
-    }).then(function(res){
-      if(!res.ok) throw new Error('fetch failed: '+res.status);
-      return res.json();
-    }).then(function(data){
-      return {
-        catches: Array.isArray(data.catches) ? data.catches : [],
-        deletedIds: Array.isArray(data.deletedIds) ? data.deletedIds : []
-      };
-    });
-  }
-  function pushRemote(payload){
-    return fetch(JSONBIN_BASE, {
-      method: 'PUT',
-      headers: { 'Content-Type':'application/json', 'X-Access-Key': JSONBIN_KEY },
-      body: JSON.stringify(payload)
-    }).then(function(res){
-      if(!res.ok) throw new Error('push failed: '+res.status);
-    });
-  }
-  function mergeState(local, remote){
-    var deletedIds = local.deletedIds.slice();
-    remote.deletedIds.forEach(function(id){ if(deletedIds.indexOf(id)===-1) deletedIds.push(id); });
-    var deletedSet = {};
-    deletedIds.forEach(function(id){ deletedSet[id] = true; });
-    var byId = {};
-    remote.catches.forEach(function(c){ if(!deletedSet[c.id]) byId[c.id] = c; });
-    local.catches.forEach(function(c){ if(!deletedSet[c.id]) byId[c.id] = c; });
-    var catches = Object.keys(byId).map(function(k){ return byId[k]; });
-    return {catches: catches, deletedIds: deletedIds};
-  }
-  function sync(){
-    if(!isSyncConfigured() || syncing) { renderSyncStatus(); return Promise.resolve(); }
-    syncing = true;
-    renderSyncStatus();
-    return fetchRemote().then(function(remote){
-      var merged = mergeState(state, remote);
-      var changed = merged.catches.length !== remote.catches.length ||
-                    merged.deletedIds.length !== remote.deletedIds.length;
-      state = merged;
-      saveState();
-      renderAll();
-      if(changed){
-        return pushRemote(merged);
-      }
-    }).then(function(){
-      lastSyncTime = Date.now();
-      syncing = false;
-      renderSyncStatus();
-    }).catch(function(){
-      syncing = false;
-      renderSyncStatus();
-    });
+  function showStorageBanner(msg){
+    var b = document.getElementById('storageBanner');
+    b.textContent = msg;
+    b.classList.remove('hidden');
   }
 
-  // ---------- Log view ----------
+  // =====================================================================
+  // Kirjausnäkymä
+  // =====================================================================
+
+  var selectedAngler = null;
+  var selectedSpecies = 'Ahven';
+  var pendingPhotoDataUrl = null;
+
   function buildAnglerPicker(){
     var wrap = document.getElementById('anglerPicker');
     wrap.innerHTML = '';
@@ -777,12 +1528,15 @@
       wrap.appendChild(chip);
     });
   }
+  function validLength(len){
+    return typeof len==='number' && isFinite(len) && len > 0 &&
+           len <= MAX_INPUT_CM && Number.isInteger(len);
+  }
   function updateSaveEnabled(){
     var len = parseFloat(document.getElementById('lengthInput').value);
-    document.getElementById('saveCatchBtn').disabled = !(selectedAngler && len > 0 && Number.isInteger(len));
+    document.getElementById('saveCatchBtn').disabled = !(selectedAngler && validLength(len));
   }
 
-  // ---------- Photo capture ----------
   function compressImage(file, maxDim, quality){
     return new Promise(function(resolve, reject){
       var reader = new FileReader();
@@ -805,17 +1559,6 @@
       reader.readAsDataURL(file);
     });
   }
-  function uploadPhoto(dataUrl){
-    var base64 = dataUrl.split(',')[1];
-    var body = new URLSearchParams();
-    body.append('image', base64);
-    return fetch(IMGBB_UPLOAD_URL + '?key=' + IMGBB_KEY, { method:'POST', body: body })
-      .then(function(res){ return res.json(); })
-      .then(function(json){
-        if(json && json.success && json.data && json.data.url) return json.data.url;
-        throw new Error('upload failed');
-      });
-  }
   function showPhotoPreview(dataUrl){
     document.getElementById('photoPreview').src = dataUrl;
     document.getElementById('photoPreviewWrap').classList.remove('hidden');
@@ -834,14 +1577,17 @@
       showPhotoPreview(dataUrl);
       flashMsg('logMsg', 'Kuva valittu');
     }).catch(function(){
-      flashMsg('logMsg', 'Kuvan käsittely epäonnistui');
+      flashMsg('logMsg', 'Kuvan käsittely epäonnistui', true);
     });
   }
 
+  // Saalis, kuva ja jonomerkintä tallennetaan pysyvästi YHDESSÄ transaktiossa
+  // ENNEN onnistumisilmoitusta. Kuvan lataus verkkoon tapahtuu vasta taustalla,
+  // joten epäonnistunut lataus ei hukkaa kuvaa eikä saalista.
   function saveCatch(){
     var lenInput = document.getElementById('lengthInput');
     var len = parseFloat(lenInput.value);
-    if(!selectedAngler || !(len > 0) || !Number.isInteger(len)) return;
+    if(!selectedAngler || !validLength(len)) return;
     var boat = boatOfAngler(selectedAngler);
     var c = {
       id: makeId(),
@@ -849,44 +1595,76 @@
       boat: boat ? boat.id : null,
       species: selectedSpecies,
       length: len,
-      time: Date.now(),
-      photoUrl: null
+      time: Date.now()
     };
-    var saveBtn = document.getElementById('saveCatchBtn');
-    var photoToUpload = pendingPhotoDataUrl;
+    var op = {opId:c.id, type:'add', comp: state.competitionId, catch:c, at:Date.now(), attempts:0};
+    var photoRec = pendingPhotoDataUrl ? {catchId:c.id, dataUrl:pendingPhotoDataUrl, uploadedUrl:null, attempts:0} : null;
+    var name = selectedAngler, sp = selectedSpecies;
 
-    function finish(){
-      state.catches.push(c);
-      saveState();
-      flashMsg('logMsg', selectedAngler + ' – ' + formatCm(len) + (selectedSpecies!=='Ahven' ? ' (' + selectedSpecies + ')' : '') + ' kirjattu');
+    persistOp(op, photoRec).then(function(){
+      flashMsg('logMsg', name + ' – ' + formatCm(len) + (sp!=='Ahven' ? ' (' + sp + ')' : '') + ' kirjattu · tallennettu laitteelle');
       lenInput.value = '';
       clearPendingPhoto();
       updateSaveEnabled();
+      refreshState();
       renderAll();
-      sync();
-    }
+      renderSyncStatus();
+      notifyOtherTabs();
+      flushNow(true);
+    }).catch(function(e){
+      // EI onnistumisilmoitusta – tallennus laitteelle epäonnistui.
+      memoryOnlyOps.push(op);
+      if(photoRec) photos[c.id] = photoRec;
+      refreshState();
+      renderAll();
+      showStorageBanner('TALLENNUS LAITTEELLE EPÄONNISTUI – saalis on vain muistissa. Älä sulje sivua, ja ota tuloksista kuvakaappaus.');
+      flashMsg('logMsg', 'VIRHE: tallennus laitteelle epäonnistui ('+String(e && e.message || e)+')', true);
+      flushNow(true); // yritetään silti lähettää palvelimelle suoraan muistista
+    });
+  }
 
-    if(photoToUpload){
-      saveBtn.disabled = true;
-      flashMsg('logMsg', 'Ladataan kuvaa…');
-      uploadPhoto(photoToUpload).then(function(url){
-        c.photoUrl = url;
-      }).catch(function(){
-        // Kuvan lataus epäonnistui – tallennetaan saalis silti ilman kuvaa.
-      }).then(finish);
-    } else {
-      finish();
-    }
-  }
   function deleteCatch(id){
-    var msg = isSyncConfigured() ? 'Poistetaanko tämä saalis kaikkien näkymästä?' : 'Poistetaanko tämä saalis?';
+    var msg = isSyncConfigured() ? 'Poistetaanko tämä saalis kaikkien näkymästä? Poiston voi palauttaa Jaa-välilehdeltä.' : 'Poistetaanko tämä saalis?';
     if(!confirm(msg)) return;
-    state.catches = state.catches.filter(function(c){ return c.id !== id; });
-    if(state.deletedIds.indexOf(id) === -1) state.deletedIds.push(id);
-    saveState();
-    renderAll();
-    sync();
+    var target = null;
+    state.catches.forEach(function(c){ if(c.id===id) target=c; });
+    if(!target) return;
+    var op = {opId:'del-'+id+'-'+Date.now(), type:'delete', comp: state.competitionId, catch: clone(target), deletedAt: Date.now(), at:Date.now(), attempts:0};
+    persistOp(op, null).then(function(){
+      appendHistory({op:'delete', id:id, angler:target.angler, length:target.length, at:Date.now()});
+      refreshState();
+      renderAll();
+      renderSyncStatus();
+      notifyOtherTabs();
+      flushNow(true);
+    }).catch(function(){
+      flashMsg('logMsg', 'Poiston tallennus epäonnistui', true);
+    });
   }
+
+  function restoreCatch(tomb){
+    var c = clone(tomb.catch);
+    c.restoredAt = Date.now();
+    var op = {opId:'res-'+c.id+'-'+Date.now(), type:'restore', comp: state.competitionId, catch:c, at:Date.now(), attempts:0};
+    persistOp(op, null).then(function(){
+      appendHistory({op:'restore', id:c.id, angler:c.angler, length:c.length, at:Date.now()});
+      refreshState();
+      renderAll();
+      renderSyncStatus();
+      notifyOtherTabs();
+      flushNow(true);
+      flashMsg('shareMsg', 'Saalis palautettu');
+    }).catch(function(){
+      flashMsg('shareMsg', 'Palautuksen tallennus epäonnistui', true);
+    });
+  }
+
+  function appendHistory(h){
+    base.history.push(h);
+    if(base.history.length > HISTORY_CAP) base.history = base.history.slice(base.history.length - HISTORY_CAP);
+    persistBase(base).catch(function(){});
+  }
+
   function renderRecentList(){
     var wrap = document.getElementById('recentList');
     wrap.innerHTML = '';
@@ -898,17 +1676,26 @@
     sorted.slice(0,25).forEach(function(c){
       var row = el('div','catchRow');
       row.appendChild(el('div','dot '+(c.boat||'')));
-      if(c.photoUrl){
+      var photoSrc = c.photoUrl || (photos[c.id] && photos[c.id].dataUrl) || null;
+      if(photoSrc){
         var thumb = document.createElement('img');
         thumb.className = 'catchThumb';
-        thumb.src = c.photoUrl;
+        thumb.src = photoSrc;
         thumb.alt = '';
-        thumb.addEventListener('click', function(){ window.open(c.photoUrl, '_blank'); });
+        thumb.addEventListener('click', function(){ window.open(photoSrc, '_blank'); });
         row.appendChild(thumb);
       }
       var main = el('div','catchMain');
       main.appendChild(el('div','catchName', c.angler + (c.species!=='Ahven' ? ' · '+c.species : '')));
-      main.appendChild(el('div','catchMeta', formatDate(c.time)+' klo '+formatTime(c.time)));
+      var meta = el('div','catchMeta');
+      meta.textContent = formatDate(c.time)+' klo '+formatTime(c.time);
+      var st = catchStatus(c.id);
+      var badge = el('span','syncBadge');
+      if(st==='confirmed'){ badge.classList.add('ok'); badge.textContent='✓'; badge.title='Vahvistettu palvelimella'; }
+      else if(st==='pending'){ badge.classList.add('wait'); badge.textContent='⏳'; badge.title='Odottaa lähettämistä'; }
+      else { badge.classList.add('err'); badge.textContent='⚠'; badge.title='Virhe tallennuksessa tai lähetyksessä'; }
+      meta.appendChild(badge);
+      main.appendChild(meta);
       row.appendChild(main);
       row.appendChild(el('div','catchLen', formatCm(c.length)));
       var del = el('button','delBtn','×');
@@ -920,7 +1707,10 @@
     });
   }
 
-  // ---------- Standings ----------
+  // =====================================================================
+  // Tulostaulut (laskentasäännöt ennallaan)
+  // =====================================================================
+
   function top3Sum(catches){
     var sorted = catches.slice().sort(function(a,b){ return b.length - a.length; });
     var top = sorted.slice(0,3);
@@ -1000,7 +1790,6 @@
     });
   }
 
-  // ---------- Side competitions ----------
   function sideStats(){
     var ahven = state.catches.filter(function(c){ return c.species==='Ahven'; });
     var smallest = ahven.length ? ahven.reduce(function(m,c){ return c.length<m.length?c:m; }) : null;
@@ -1067,19 +1856,187 @@
     });
   }
 
-  // ---------- Share / import / export ----------
-  function buildExportPayload(){
-    return JSON.stringify({version:1, exportedAt: Date.now(), catches: state.catches, deletedIds: state.deletedIds});
-  }
-  function exportData(){
-    var payload = buildExportPayload();
-    if(navigator.share){
-      navigator.share({title:'Ahvenkisa – saalistiedot', text: payload}).catch(function(){
-        showExportBox(payload);
-      });
-    } else {
-      showExportBox(payload);
+  // =====================================================================
+  // Jaa-näkymä: roskakori, arkistot, varmuuskopiot, historia
+  // =====================================================================
+
+  function renderTrash(){
+    var wrap = document.getElementById('trashList');
+    wrap.innerHTML = '';
+    var tombs = state.tombstones.filter(function(t){ return t.catch.angler; })
+      .sort(function(a,b){ return b.deletedAt - a.deletedAt; });
+    if(!tombs.length){
+      wrap.appendChild(el('div','empty','Ei poistettuja saaliita.'));
+      return;
     }
+    tombs.slice(0,20).forEach(function(t){
+      var row = el('div','catchRow');
+      var main = el('div','catchMain');
+      main.appendChild(el('div','catchName', t.catch.angler + ' · ' + formatCm(t.catch.length) + (t.catch.species!=='Ahven' ? ' · '+t.catch.species : '')));
+      main.appendChild(el('div','catchMeta', 'poistettu ' + formatDate(t.deletedAt) + ' klo ' + formatTime(t.deletedAt)));
+      row.appendChild(main);
+      var btn = el('button','smallBtn','Palauta');
+      btn.type = 'button';
+      btn.addEventListener('click', function(){ restoreCatch(t); });
+      row.appendChild(btn);
+      wrap.appendChild(row);
+    });
+  }
+
+  function renderArchives(){
+    var wrap = document.getElementById('archiveList');
+    wrap.innerHTML = '';
+    if(!state.archives.length){
+      wrap.appendChild(el('div','empty','Ei arkistoituja kisoja.'));
+      return;
+    }
+    state.archives.forEach(function(a){
+      var row = el('div','catchRow');
+      var main = el('div','catchMain');
+      main.appendChild(el('div','catchName', 'Kisa ' + (a.archivedAt ? formatDate(a.archivedAt)+' klo '+formatTime(a.archivedAt) : a.competitionId)));
+      main.appendChild(el('div','catchMeta', a.catches.length + ' ' + pluralKala(a.catches.length)));
+      row.appendChild(main);
+      var btn = el('button','smallBtn','Palauta kisaan');
+      btn.type = 'button';
+      btn.addEventListener('click', function(){ restoreArchive(a); });
+      row.appendChild(btn);
+      wrap.appendChild(row);
+    });
+  }
+
+  function restoreArchive(a){
+    if(!confirm('Palautetaanko arkistoidun kisan '+a.catches.length+' saalista nykyiseen kisaan?')) return;
+    var now = Date.now();
+    var restored = clone(base);
+    a.catches.forEach(function(c){
+      var cc = clone(c);
+      cc.restoredAt = now;
+      var m = {};
+      restored.catches.forEach(function(x){ m[x.id]=true; });
+      if(!m[cc.id]) restored.catches.push(cc);
+      restored.tombstones = restored.tombstones.filter(function(t){ return t.catch.id !== cc.id; });
+    });
+    restored.history.push({op:'restore-archive', at:now});
+    persistBase(restored).then(function(){
+      refreshState();
+      renderAll();
+      notifyOtherTabs();
+      flushNow(true);
+      flashMsg('shareMsg','Arkisto palautettu kisaan');
+    }).catch(function(){
+      flashMsg('shareMsg','Palautus epäonnistui', true);
+    });
+  }
+
+  function renderBackups(){
+    var wrap = document.getElementById('backupList');
+    listBackups().then(function(list){
+      wrap.innerHTML = '';
+      if(!list.length){
+        wrap.appendChild(el('div','empty','Ei varmuuskopioita vielä.'));
+        return;
+      }
+      list.slice(0,8).forEach(function(b){
+        var row = el('div','catchRow');
+        var main = el('div','catchMain');
+        var count = (b.doc.catches||[]).length;
+        main.appendChild(el('div','catchName', formatDate(b.at)+' klo '+formatTime(b.at)));
+        main.appendChild(el('div','catchMeta', count + ' ' + pluralKala(count)));
+        row.appendChild(main);
+        var btn = el('button','smallBtn','Yhdistä');
+        btn.type = 'button';
+        btn.addEventListener('click', function(){
+          if(!confirm('Yhdistetäänkö varmuuskopion saaliit takaisin? Palauttaa myös poistetut ja nollatut saaliit.')) return;
+          applyImport(b.doc, true);
+        });
+        row.appendChild(btn);
+        wrap.appendChild(row);
+      });
+    });
+  }
+
+  function renderHistory(){
+    var box = document.getElementById('historyBox');
+    box.innerHTML = '';
+    var hist = state.history.slice().sort(function(a,b){ return b.at-a.at; }).slice(0,30);
+    if(!hist.length){
+      box.appendChild(el('div', null, 'Ei tapahtumia.'));
+      return;
+    }
+    var names = {add:'kirjaus', 'delete':'poisto', restore:'palautus', reset:'kisan nollaus', 'restore-archive':'arkiston palautus', 'import':'tuonti'};
+    hist.forEach(function(h){
+      var txt = formatDate(h.at)+' '+formatTime(h.at)+' · '+(names[h.op]||h.op);
+      if(h.angler) txt += ' · '+h.angler + (h.length ? ' '+formatCm(h.length) : '');
+      box.appendChild(el('div', null, txt));
+    });
+  }
+
+  // =====================================================================
+  // Vienti / tuonti / palautus
+  // =====================================================================
+
+  function fetchPhotoAsDataUrl(url){
+    return timeoutFetch(url, {}, 5000).then(function(res){
+      if(!res.ok) throw new Error('kuvan haku epäonnistui');
+      return res.blob();
+    }).then(function(blob){
+      return new Promise(function(resolve, reject){
+        var r = new FileReader();
+        r.onload = function(){ resolve(r.result); };
+        r.onerror = function(){ reject(new Error('lukeminen epäonnistui')); };
+        r.readAsDataURL(blob);
+      });
+    });
+  }
+
+  // Varmuuskopio sisältää myös kuvatiedostot: laitteen omat kuvat paikallisesta
+  // varastosta, muiden laitteiden kuvat yritetään noutaa URL-osoitteesta.
+  function buildExportPayload(){
+    refreshState();
+    var payload = {
+      version: 2,
+      exportedAt: Date.now(),
+      competitionId: state.competitionId,
+      catches: clone(state.catches),
+      tombstones: clone(state.tombstones),
+      archives: clone(state.archives),
+      history: clone(state.history),
+      photos: {},
+      photosMissing: 0
+    };
+    var chain = Promise.resolve();
+    var wanted = [];
+    state.catches.concat(state.tombstones.map(function(t){ return t.catch; })).forEach(function(c){
+      if(photos[c.id] && photos[c.id].dataUrl){
+        payload.photos[c.id] = photos[c.id].dataUrl;
+      } else if(c.photoUrl){
+        wanted.push(c);
+      }
+    });
+    wanted.forEach(function(c){
+      chain = chain.then(function(){
+        return fetchPhotoAsDataUrl(c.photoUrl).then(function(dataUrl){
+          payload.photos[c.id] = dataUrl;
+        }).catch(function(){
+          payload.photosMissing++;
+        });
+      });
+    });
+    return chain.then(function(){ return payload; });
+  }
+
+  function exportData(){
+    flashMsg('shareMsg','Kootaan varmuuskopiota…');
+    buildExportPayload().then(function(payload){
+      var text = JSON.stringify(payload);
+      if(navigator.share){
+        navigator.share({title:'Ahvenkisa – saalistiedot', text: text}).catch(function(){
+          showExportBox(text);
+        });
+      } else {
+        showExportBox(text);
+      }
+    });
   }
   function showExportBox(payload){
     var box = document.getElementById('exportBox');
@@ -1102,58 +2059,130 @@
     }
   }
   function downloadBackup(){
-    var payload = buildExportPayload();
-    var blob = new Blob([payload], {type:'application/json'});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'ahvenkisa-varmuuskopio-'+new Date().toISOString().slice(0,10)+'.json';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-  }
-  function importFromText(text){
-    var parsed;
-    try{ parsed = JSON.parse(text); }
-    catch(e){ flashMsg('shareMsg','Ei kelvollista dataa – tarkista teksti'); return; }
-    var incoming = (parsed && Array.isArray(parsed.catches)) ? parsed.catches : null;
-    if(!incoming){ flashMsg('shareMsg','Ei kelvollista dataa – tarkista teksti'); return; }
-    var incomingDeleted = Array.isArray(parsed.deletedIds) ? parsed.deletedIds : [];
-    incomingDeleted.forEach(function(id){ if(state.deletedIds.indexOf(id)===-1) state.deletedIds.push(id); });
-    var deletedSet = {};
-    state.deletedIds.forEach(function(id){ deletedSet[id] = true; });
-    var existingIds = {};
-    state.catches.forEach(function(c){ existingIds[c.id] = true; });
-    var added = 0;
-    incoming.forEach(function(c){
-      if(c && c.id && !existingIds[c.id] && !deletedSet[c.id] && c.angler && typeof c.length==='number'){
-        state.catches.push(c);
-        existingIds[c.id] = true;
-        added++;
-      }
+    flashMsg('shareMsg','Kootaan varmuuskopiota…');
+    buildExportPayload().then(function(payload){
+      var blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'ahvenkisa-varmuuskopio-'+new Date().toISOString().slice(0,10)+'.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      flashMsg('shareMsg','Varmuuskopio ladattu' + (payload.photosMissing ? ' ('+payload.photosMissing+' kuvaa jäi puuttumaan)' : ' kuvineen'));
     });
-    state.catches = state.catches.filter(function(c){ return !deletedSet[c.id]; });
-    saveState();
-    renderAll();
-    flashMsg('shareMsg', added>0 ? ('Tuotu '+added+' uutta saalista') : 'Ei uusia saaliita – kaikki olivat jo listalla');
-    sync();
-  }
-  function resetAll(){
-    var msg = isSyncConfigured()
-      ? 'Nollataanko koko kisa kaikilta kuudelta? Tämä poistaa yhteisestä tallennuksesta kaikkien saaliit, ei vain tämän laitteen.'
-      : 'Nollataanko koko kisa? Kaikki tälle laitteelle kirjatut saaliit poistetaan.';
-    if(!confirm(msg)) return;
-    var allIds = state.catches.map(function(c){ return c.id; });
-    var deletedIds = state.deletedIds.slice();
-    allIds.forEach(function(id){ if(deletedIds.indexOf(id)===-1) deletedIds.push(id); });
-    state = {catches:[], deletedIds: deletedIds};
-    saveState();
-    renderAll();
-    sync();
   }
 
-  // ---------- Tabs ----------
+  // restoreMode=false: yhdistä (poistot pysyvät voimassa).
+  // restoreMode=true: palautus – tuodut saaliit ohittavat poistot ja nollauksen.
+  function applyImport(parsed, restoreMode){
+    var incoming;
+    try{ incoming = normalizeDoc(parsed); }
+    catch(e){ flashMsg('shareMsg','Ei kelvollista dataa – tarkista teksti', true); return; }
+
+    var now = Date.now();
+    if(restoreMode){
+      // Palautetaan myös arkistoiduista kisoista.
+      var all = incoming.catches.slice();
+      incoming.tombstones.forEach(function(t){ if(t.catch.angler) all.push(t.catch); });
+      incoming.archives.forEach(function(a){
+        a.catches.forEach(function(c){ all.push(c); });
+        a.tombstones.forEach(function(t){ if(t.catch.angler) all.push(t.catch); });
+      });
+      incoming = emptyState();
+      incoming.competitionId = state.competitionId;
+      incoming.catches = all.map(function(c){
+        var cc = clone(c);
+        cc.restoredAt = now;
+        return cc;
+      });
+    }
+
+    refreshState();
+    var before = {};
+    state.catches.forEach(function(c){ before[c.id]=true; });
+    var merged = mergeStates(state, incoming);
+    var added = merged.catches.filter(function(c){ return !before[c.id]; }).length;
+    merged.history.push({op:'import', at:now});
+
+    // tuodut kuvat talteen paikalliseen varastoon
+    var photoMap = (parsed && parsed.photos && typeof parsed.photos==='object') ? parsed.photos : {};
+    var photoChain = Promise.resolve();
+    Object.keys(photoMap).forEach(function(catchId){
+      var dataUrl = photoMap[catchId];
+      if(typeof dataUrl!=='string' || dataUrl.indexOf('data:image/')!==0) return;
+      if(photos[catchId] && photos[catchId].dataUrl) return;
+      var hasUrl = merged.catches.some(function(c){ return c.id===catchId && c.photoUrl; });
+      photoChain = photoChain.then(function(){
+        return persistPhoto({catchId:catchId, dataUrl:dataUrl, uploadedUrl: hasUrl ? 'known' : null, attempts:0});
+      });
+    });
+
+    photoChain.then(function(){
+      return persistBase(merged);
+    }).then(function(){
+      refreshState();
+      renderAll();
+      renderSyncStatus();
+      notifyOtherTabs();
+      flashMsg('shareMsg', added>0 ? ((restoreMode?'Palautettu ':'Tuotu ')+added+' saalista') : 'Ei uusia saaliita – kaikki olivat jo listalla');
+      flushNow(true);
+    }).catch(function(e){
+      flashMsg('shareMsg','Tallennus laitteelle epäonnistui: '+String(e && e.message || e), true);
+    });
+  }
+  function importFromText(text, restoreMode){
+    var parsed;
+    try{ parsed = JSON.parse(text); }
+    catch(e){ flashMsg('shareMsg','Ei kelvollista dataa – tarkista teksti', true); return; }
+    applyImport(parsed, restoreMode);
+  }
+
+  // Kisan nollaus: vaatii PIN-koodin, arkistoi eikä tuhoa. HUOM: koska sovellus
+  // on pelkkä selainsovellus, PIN estää vain vahingot – ei määrätietoista
+  // väärinkäyttöä (ks. raportti).
+  function resetAll(){
+    var pin = prompt('Kisan nollaus vaatii ylläpitäjän PIN-koodin:');
+    if(pin === null) return;
+    if(pin !== ADMIN_PIN){ alert('Väärä PIN.'); return; }
+    if(!confirm('Nollataanko kisa kaikilta? Nykyinen kisa siirtyy arkistoon, josta sen voi palauttaa.')) return;
+
+    refreshState();
+    var now = Date.now();
+    var archived = {competitionId: state.competitionId, archivedAt: now, catches: clone(state.catches), tombstones: clone(state.tombstones)};
+    var newComp = 'nauvo-' + now;
+    var fresh = emptyState();
+    fresh.competitionId = newComp;
+    fresh.archives = [archived].concat(clone(state.archives)).slice(0, ARCHIVE_CAP);
+    fresh.history = clone(state.history);
+    fresh.history.push({op:'reset', at:now});
+    if(fresh.history.length > HISTORY_CAP) fresh.history = fresh.history.slice(fresh.history.length - HISTORY_CAP);
+
+    var oldComp = state.competitionId;
+    var resetOp = {opId:'reset-'+newComp, type:'reset', archivedCompetitionId:oldComp, newCompetitionId:newComp, archivedAt:now, at:now, attempts:0};
+    var dropOps = outbox.filter(function(o){ return o.comp === oldComp; }).map(function(o){ return o.opId; });
+
+    deleteOps(dropOps).then(function(){
+      return persistOp(resetOp, null);
+    }).then(function(){
+      return persistBase(fresh);
+    }).then(function(){
+      refreshState();
+      renderAll();
+      renderSyncStatus();
+      notifyOtherTabs();
+      flushNow(true);
+      flashMsg('shareMsg','Kisa nollattu ja arkistoitu');
+    }).catch(function(e){
+      flashMsg('shareMsg','Nollaus epäonnistui: '+String(e && e.message || e), true);
+    });
+  }
+
+  // =====================================================================
+  // Välilehdet ja käynnistys
+  // =====================================================================
+
   function showView(view){
     document.querySelectorAll('main .view').forEach(function(v){ v.classList.toggle('active', v.dataset.view===view); });
     document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.dataset.view===view); });
@@ -1165,6 +2194,53 @@
     renderRecentList();
     renderStandings();
     renderSideStats();
+    renderTrash();
+    renderArchives();
+    renderBackups();
+    renderHistory();
+  }
+
+  function loadPersisted(){
+    return openIdb().then(function(db){
+      idb = db;
+      storageMode = 'idb';
+      return Promise.all([
+        idbReq(idb.transaction(['kv'],'readonly').objectStore('kv').get('state')),
+        idbGetAll('outbox'),
+        idbGetAll('photos')
+      ]);
+    }).then(function(res){
+      if(res[0]){
+        try{ base = normalizeDoc(res[0]); }catch(e){ base = emptyState(); }
+      } else {
+        // ensimmäinen käynnistys: siirrä vanhan version data talteen
+        try{
+          var raw = localStorage.getItem(LEGACY_LS_KEY);
+          if(raw) base = normalizeDoc(JSON.parse(raw));
+        }catch(e){}
+      }
+      outbox = res[1] || [];
+      photos = {};
+      (res[2]||[]).forEach(function(p){ photos[p.catchId] = p; });
+    }).catch(function(){
+      // IndexedDB ei käytettävissä – localStorage-varapolku
+      storageMode = 'ls';
+      try{
+        var raw2 = localStorage.getItem(LS_STATE_KEY) || localStorage.getItem(LEGACY_LS_KEY);
+        if(raw2) base = normalizeDoc(JSON.parse(raw2));
+        var rawOut = localStorage.getItem(LS_OUTBOX_KEY);
+        outbox = rawOut ? JSON.parse(rawOut) : [];
+        if(!Array.isArray(outbox)) outbox = [];
+        // varmista että localStorageen oikeasti voi kirjoittaa
+        localStorage.setItem(LS_STATE_KEY, JSON.stringify(base));
+        showStorageBanner('Huom: laajempi paikallinen tallennus ei ole käytettävissä – kuvat eivät säily sivun sulkemisen yli.');
+      }catch(e){
+        storageMode = 'memory';
+        base = emptyState();
+        outbox = [];
+        showStorageBanner('VAROITUS: paikallinen tallennus ei toimi tällä laitteella. Kirjaukset säilyvät vain niin kauan kuin sivu on auki.');
+      }
+    });
   }
 
   function init(){
@@ -1193,30 +2269,61 @@
     document.getElementById('downloadBtn').addEventListener('click', downloadBackup);
     document.getElementById('copyBtn').addEventListener('click', copyExport);
     document.getElementById('importBtn').addEventListener('click', function(){
-      importFromText(document.getElementById('importBox').value);
+      importFromText(document.getElementById('importBox').value, false);
+    });
+    document.getElementById('importRestoreBtn').addEventListener('click', function(){
+      importFromText(document.getElementById('importBox').value, true);
     });
     document.getElementById('importFile').addEventListener('change', function(e){
       var file = e.target.files && e.target.files[0];
       if(!file) return;
       var reader = new FileReader();
-      reader.onload = function(){ importFromText(reader.result); };
+      reader.onload = function(){ importFromText(reader.result, false); };
       reader.readAsText(file);
     });
     document.getElementById('resetBtn').addEventListener('click', resetAll);
-    document.getElementById('syncNowBtn').addEventListener('click', sync);
+    document.getElementById('syncNowBtn').addEventListener('click', function(){ flushNow(true); });
 
-    renderAll();
-    renderSyncStatus();
-
-    if(isSyncConfigured()){
-      sync();
-      setInterval(sync, POLL_INTERVAL_MS);
-      window.addEventListener('online', sync);
-      window.addEventListener('focus', sync);
-      document.addEventListener('visibilitychange', function(){
-        if(document.visibilityState === 'visible') sync();
-      });
+    if(bc){
+      bc.onmessage = function(){ reloadFromStore(); };
     }
+    window.addEventListener('storage', function(e){
+      if(e.key === LS_STATE_KEY || e.key === LS_OUTBOX_KEY) reloadFromStore();
+    });
+
+    loadPersisted().then(function(){
+      refreshState();
+      renderAll();
+      renderSyncStatus();
+      if(isSyncConfigured()){
+        flushNow(true);
+        setInterval(function(){ flushNow(false); }, POLL_INTERVAL_MS);
+        window.addEventListener('online', function(){ flushNow(true); });
+        window.addEventListener('focus', function(){ flushNow(true); });
+        document.addEventListener('visibilitychange', function(){
+          if(document.visibilityState === 'visible') flushNow(true);
+        });
+      }
+      if(TEST){
+        window.__AK = {
+          flush: function(){ return flushNow(true); },
+          state: function(){ refreshState(); return state; },
+          base: function(){ return base; },
+          debug: function(){
+            return {
+              storageMode: storageMode,
+              pending: pendingCounts(),
+              outbox: outbox.map(function(o){ return {opId:o.opId, type:o.type, attempts:o.attempts, lastError:o.lastError||null}; }),
+              memoryOnly: memoryOnlyOps.length,
+              syncState: clone(syncState),
+              confirmedCount: Object.keys(confirmedIds).length
+            };
+          },
+          statusOf: catchStatus,
+          ready: true
+        };
+      }
+    });
   }
 
   document.addEventListener('DOMContentLoaded', init);
