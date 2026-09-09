@@ -2861,13 +2861,6 @@
       refreshState();
       renderAll();
       renderSyncStatus();
-      if(isSyncConfigured() && !isSharded()){
-        // Käyttäjälle kerrotaan vain se, mitä hän voi itse tehdä. Tekninen
-        // taustasyy (JSONBinistä puuttuu ehdollinen kirjoitus, korjaus on ottaa
-        // SHARD_BINS käyttöön) on kuvattu tuon vakion kommentissa.
-        showStorageBanner('Pidä sovellus auki koko kisan ajan. Jos suljet sen heti kirjauksen jälkeen, ' +
-          'saalis voi harvinaisessa tapauksessa jäädä muilta näkymättä.', 'note');
-      }
       if(isSyncConfigured()){
         myShard = loadShardChoice();
         flushNow(true);
