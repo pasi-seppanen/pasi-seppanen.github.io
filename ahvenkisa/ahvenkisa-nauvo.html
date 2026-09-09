@@ -688,14 +688,31 @@
   // Konfiguraatio
   // =====================================================================
 
-  var LEGACY_LS_KEY = 'ahvenkisa-nauvo-v1';     // vanhan version localStorage (peilataan yhä)
   var LS_STATE_KEY  = 'ahvenkisa-v2-state';     // varapolku jos IndexedDB ei toimi
   var LS_OUTBOX_KEY = 'ahvenkisa-v2-outbox';
   var DEVICE_KEY    = 'ahvenkisa-device-id';
   var IDB_NAME      = 'ahvenkisa-nauvo';
   var LEGACY_COMP   = 'nauvo-legacy';
+  var SCHEMA_VERSION = 2;   // sama tunnus sekä viennissä että tarkistuksessa
 
   // Yhteinen tallennus (JSONBin.io).
+  //
+  // SHARD_BINS: kirjoittaja-omisteiset binit. Kun tässä on yksi bin per laite,
+  // kaksi laitetta ei voi koskaan kirjoittaa samaan dokumenttiin, eikä
+  // ylikirjoitusta tapahdu. Luo binit jsonbin.io:ssa Master Keyllä (sisältö
+  // {} riittää), anna Access Keylle niihin Read+Update ja liitä id:t tänne.
+  // Slotteja kannattaa olla vähintään yhtä monta kuin laitteita.
+  //
+  // Jos tämä jätetään tyhjäksi, sovellus käyttää yhtä jaettua biniä. Silloin
+  // JSONBinin puuttuvan ehdollisen kirjoituksen takia kahden laitteen
+  // yhtäaikainen tallennus voi yhä ylikirjoittaa toisensa – sovellus kertoo
+  // siitä näkyvästi.
+  var SHARD_BINS = [
+    // {slot:'1', id:'...'},
+    // {slot:'2', id:'...'},
+  ];
+  var SHARD_KEY = 'ahvenkisa-shard';
+
   var JSONBIN_ID = '6a96b537f5f4af5e295c1ad2';
   var JSONBIN_KEY = '$2a$10$hj9/23sfFLe1fI1FENoQmusiGCi5hBOquXiIjPq66J17rIp2SmQ8W';
 
@@ -723,10 +740,14 @@
     return {
       api: p.get('testapi'),
       poll: parseInt(p.get('poll') || '0', 10) || 0,
-      iotimeout: parseInt(p.get('iotimeout') || '0', 10) || 0
+      iotimeout: parseInt(p.get('iotimeout') || '0', 10) || 0,
+      shards: (p.get('shards') || '').split(',').filter(Boolean)
     };
   })();
 
+  if(TEST && TEST.shards.length){
+    SHARD_BINS = TEST.shards.map(function(id, i){ return {slot:String(i+1), id:id}; });
+  }
   var JSONBIN_BASE   = TEST ? TEST.api + '/v3/b/testbin' : 'https://api.jsonbin.io/v3/b/' + JSONBIN_ID;
   var IMGBB_UPLOAD_URL = TEST ? TEST.api + '/upload' : 'https://api.imgbb.com/1/upload';
   var POLL_INTERVAL_MS = (TEST && TEST.poll) || 30000;
@@ -832,10 +853,10 @@
   // }
   // Elossa/poistettu ratkeaa tunnisteittain: poistettu jos tombstone.deletedAt >
   // (catch.restoredAt||0). Uudempi palautus voittaa siis vanhemman poiston.
-  // JSONBiniin kirjoitetaan lisäksi deletedIds-peili vanhoja sovellusversioita varten.
+  // Vain tämä versio on käytössä, joten vanhaa v1-muotoa ei lueta eikä kirjoiteta.
 
   function emptyState(){
-    return {schemaVersion:2, competitionId:LEGACY_COMP, catches:[], tombstones:[], archives:[], history:[]};
+    return {schemaVersion:SCHEMA_VERSION, competitionId:LEGACY_COMP, catches:[], tombstones:[], archives:[], history:[]};
   }
   function validCatch(c){
     return !!(c && typeof c==='object' &&
@@ -855,48 +876,71 @@
     return m ? parseInt(m[1],10) : 0;
   }
 
-  // Normalisoi palvelimen (tai tuonnin) dokumentti v2-tilaksi. Heittää virheen,
-  // jos rakenne ei kelpaa – virheellistä vastausta EI koskaan tulkita tyhjäksi
-  // kisaksi eikä kirjoiteta sen päälle.
+  // Normalisoi dokumentti (palvelimelta, varmuuskopiosta tai paikallisesta
+  // tallennuksesta) tilaksi. Ei koskaan pudota tietuetta hiljaisesti: jos jokin
+  // kelvoton löytyy, se kerätään talteen ja normalizeDoc heittää DataError-
+  // virheen, jonka mukana kulkee alkuperäinen data. Kutsuja päättää mitä tehdä,
+  // mutta palvelimelle EI kirjoiteta virheellisen vastauksen pohjalta.
+  function DataError(message, raw, rejected){
+    var e = new Error(message);
+    e.name = 'DataError';
+    e.raw = raw;
+    e.rejected = rejected || [];
+    return e;
+  }
+
   function normalizeDoc(data){
     if(!data || typeof data !== 'object' || Array.isArray(data)){
-      throw new Error('kelvoton dokumentti');
+      throw DataError('kelvoton dokumentti', data);
     }
-    if(data.schemaVersion === 2){
-      if(!Array.isArray(data.catches) || !Array.isArray(data.tombstones)) throw new Error('kelvoton v2-dokumentti');
-      var s = emptyState();
-      s.competitionId = (typeof data.competitionId==='string' && data.competitionId) ? data.competitionId : LEGACY_COMP;
-      s.catches = data.catches.filter(validCatch).map(clone);
-      s.tombstones = data.tombstones.filter(validTombstone).map(clone);
-      s.archives = Array.isArray(data.archives) ? data.archives.filter(function(a){
-        return a && typeof a.competitionId==='string';
-      }).map(function(a){
-        return {
-          competitionId: a.competitionId,
-          archivedAt: typeof a.archivedAt==='number' ? a.archivedAt : 0,
-          catches: (Array.isArray(a.catches)?a.catches:[]).filter(validCatch).map(clone),
-          tombstones: (Array.isArray(a.tombstones)?a.tombstones:[]).filter(validTombstone).map(clone)
-        };
-      }) : [];
-      s.history = Array.isArray(data.history) ? data.history.filter(function(h){
-        return h && typeof h.op==='string' && typeof h.at==='number';
-      }).map(clone) : [];
-      return s;
+    if(data.schemaVersion !== SCHEMA_VERSION){
+      throw DataError('tuntematon tallennusmuoto (schemaVersion=' +
+        JSON.stringify(data.schemaVersion) + ', odotettiin ' + SCHEMA_VERSION + ')', data);
     }
-    // vanha skeema v1
-    if(Array.isArray(data.catches)){
-      var s1 = emptyState();
-      s1.catches = data.catches.filter(validCatch).map(clone);
-      var dIds = Array.isArray(data.deletedIds) ? data.deletedIds : [];
-      s1.tombstones = dIds.filter(function(id){ return typeof id==='string' && id; })
-        .map(function(id){ return {catch:{id:id}, deletedAt:1}; });
-      // v1-poisto poistaa myös catch-listalta
-      var dSet = {};
-      s1.tombstones.forEach(function(t){ dSet[t.catch.id]=true; });
-      s1.catches = s1.catches.filter(function(c){ return !dSet[c.id]; });
-      return s1;
+    if(!Array.isArray(data.catches) || !Array.isArray(data.tombstones)){
+      throw DataError('dokumentista puuttuu catches tai tombstones', data);
     }
-    throw new Error('tuntematon dokumenttimuoto');
+
+    var rejected = [];
+    function keepCatches(list, where){
+      return (Array.isArray(list) ? list : []).filter(function(c){
+        if(validCatch(c)) return true;
+        rejected.push({where: where, kind: 'catch', value: c});
+        return false;
+      }).map(clone);
+    }
+    function keepTombs(list, where){
+      return (Array.isArray(list) ? list : []).filter(function(t){
+        if(validTombstone(t)) return true;
+        rejected.push({where: where, kind: 'tombstone', value: t});
+        return false;
+      }).map(clone);
+    }
+
+    var s = emptyState();
+    s.competitionId = (typeof data.competitionId==='string' && data.competitionId) ? data.competitionId : LEGACY_COMP;
+    s.catches = keepCatches(data.catches, 'catches');
+    s.tombstones = keepTombs(data.tombstones, 'tombstones');
+    s.archives = (Array.isArray(data.archives) ? data.archives : []).filter(function(a){
+      if(a && typeof a.competitionId==='string') return true;
+      rejected.push({where:'archives', kind:'archive', value:a});
+      return false;
+    }).map(function(a){
+      return {
+        competitionId: a.competitionId,
+        archivedAt: typeof a.archivedAt==='number' ? a.archivedAt : 0,
+        catches: keepCatches(a.catches, 'archives/'+a.competitionId),
+        tombstones: keepTombs(a.tombstones, 'archives/'+a.competitionId)
+      };
+    });
+    s.history = (Array.isArray(data.history) ? data.history : []).filter(function(h){
+      return h && typeof h.op==='string' && typeof h.at==='number';
+    }).map(clone);
+
+    if(rejected.length){
+      throw DataError(rejected.length + ' tietuetta ei läpäissyt tarkistusta', data, rejected);
+    }
+    return s;
   }
 
   function mergeCatchInto(map, c){
@@ -904,12 +948,15 @@
     if(!e){ map[c.id] = clone(c); return; }
     if((c.restoredAt||0) > (e.restoredAt||0)) e.restoredAt = c.restoredAt;
     if(c.photoUrl && !e.photoUrl) e.photoUrl = c.photoUrl;
+    if(c.origin && !e.origin) e.origin = c.origin;
+    if(c.adoptedBy && !e.adoptedBy) e.adoptedBy = c.adoptedBy;
   }
   function mergeTombInto(map, t){
     var id = t.catch.id;
     var e = map[id];
     if(!e){ map[id] = clone(t); return; }
-    if(t.deletedAt > e.deletedAt) e.deletedAt = t.deletedAt;
+    if(t.deletedAt > e.deletedAt){ e.deletedAt = t.deletedAt; e.by = t.by; }
+    if(t.adoptedBy && !e.adoptedBy) e.adoptedBy = t.adoptedBy;
     if(t.catch.angler && !e.catch.angler) e.catch = clone(t.catch);
   }
 
@@ -1004,12 +1051,11 @@
     });
   }
 
-  function pushDoc(s, rev){
+  function pushDoc(s){
     var d = clone(s);
-    d.rev = rev;
+    d.schemaVersion = SCHEMA_VERSION;
     d.updatedAt = Date.now();
     d.lastWriter = DEVICE_ID;
-    d.deletedIds = s.tombstones.map(function(t){ return t.catch.id; }); // peili vanhoille versioille
     return d;
   }
 
@@ -1066,20 +1112,33 @@
   var bc = null;
   try{ bc = new BroadcastChannel('ahvenkisa'); }catch(e){}
 
-  function legacyMirror(s){
-    // Kirjoitetaan myös vanhan version muoto, jotta sovellusversion vaihto
-    // taaksepäin ei hävitä dataa. Virhe tässä ei ole vakava.
-    try{
-      localStorage.setItem(LEGACY_LS_KEY, JSON.stringify({
-        catches: s.catches,
-        deletedIds: s.tombstones.map(function(t){ return t.catch.id; })
-      }));
-    }catch(e){}
+  // Tiedon eheys: jos paikallinen tila tai palvelimen vastaus ei läpäise
+  // tarkistusta, kirjoittaminen estetään kokonaan, jotta viallinen tai vajaa
+  // näkymä ei pyyhi palvelimen dataa.
+  var baseVersion = 0;          // kasvaa joka kerta kun perustila kirjoitetaan
+
+  // Paikalliset tilamuutokset ajetaan yksi kerrallaan. Synkka, tuonti, palautus
+  // ja nollaus lukevat perustilan, laskevat uuden ja kirjoittavat sen takaisin;
+  // jos kaksi niistä lomittuu, toinen ylikirjoittaa toisen tuloksen.
+  var localChain = Promise.resolve();
+  function serialize(fn){
+    var run = function(){ return fn(); };
+    var p = localChain.then(run, run);
+    localChain = p.then(function(){}, function(){});
+    return p;
+  }
+  var localDataError = null;    // {message, raw, rejected}
+  var remoteDataError = null;   // {message, rejected}
+  function writesBlocked(){ return !!(localDataError || remoteDataError); }
+  function blockedReason(){
+    if(localDataError) return 'Laitteen tallennus on viallinen: ' + localDataError.message;
+    if(remoteDataError) return 'Palvelimen data on viallinen: ' + remoteDataError.message;
+    return '';
   }
 
   function persistBase(s){
     base = s;
-    legacyMirror(s);
+    baseVersion++;
     if(storageMode === 'idb'){
       var t = idb.transaction(['kv'],'readwrite');
       t.objectStore('kv').put(clone(s), 'state');
@@ -1143,6 +1202,91 @@
     if(storageMode === 'ls') return persistOutboxLs().catch(function(){});
     return Promise.resolve();
   }
+  // Kohta 2: uusi perustila ja vahvistettujen operaatioiden poisto samassa
+  // IndexedDB-transaktiossa. Joko molemmat tapahtuvat tai kumpikaan ei –
+  // keskeytys ei voi jättää tilaa, jossa operaatio on poistettu jonosta mutta
+  // sen tulos ei ole tallessa. Muistin rakenteita päivitetään vasta kun
+  // transaktio on valmistunut, ja virhe nostetaan kutsujalle.
+  var breakCommitForTest = false;
+  function commitSync(newBase, confirmedOpIds, expectedVersion){
+    if(breakCommitForTest){
+      return Promise.reject(new Error('paikallinen kuittaus keskeytyi (testi)'));
+    }
+    if(expectedVersion !== undefined && expectedVersion !== baseVersion){
+      // Perustila muuttui kesken synkan (tuonti, palautus, nollaus). Tämä tulos
+      // on vanhentunut eikä sitä saa kirjoittaa sen päälle.
+      var e = new Error('perustila muuttui kesken synkronoinnin – yritetään uudelleen');
+      e.name = 'StaleSync';
+      return Promise.reject(e);
+    }
+    if(storageMode === 'idb'){
+      var t = idb.transaction(['kv','outbox'],'readwrite');
+      t.objectStore('kv').put(clone(newBase), 'state');
+      confirmedOpIds.forEach(function(id){ t.objectStore('outbox').delete(id); });
+      return idbTxnDone(t).then(function(){
+        base = newBase;
+        baseVersion++;
+        outbox = outbox.filter(function(o){ return confirmedOpIds.indexOf(o.opId) === -1; });
+      });
+    }
+    if(storageMode === 'ls'){
+      // localStorage ei tunne transaktioita. Kirjoitetaan tila ensin ja jono
+      // vasta sen jälkeen: keskeytys jättää operaation jonoon, jolloin se
+      // uusitaan – tietue ei katoa, korkeintaan lähetetään kahdesti (ja
+      // vastaanotto on tunnisteen ansiosta idempotentti).
+      var prevBase = base, prevOutbox = outbox;
+      base = newBase;
+      baseVersion++;
+      outbox = outbox.filter(function(o){ return confirmedOpIds.indexOf(o.opId) === -1; });
+      try{
+        localStorage.setItem(LS_STATE_KEY, JSON.stringify(newBase));
+        localStorage.setItem(LS_OUTBOX_KEY, JSON.stringify(outbox));
+        return Promise.resolve();
+      }catch(e){
+        base = prevBase; outbox = prevOutbox;
+        return Promise.reject(e);
+      }
+    }
+    // muistitila: ei pysyvää tallennusta, mutta tila pysyy ehjänä
+    base = newBase;
+    baseVersion++;
+    outbox = outbox.filter(function(o){ return confirmedOpIds.indexOf(o.opId) === -1; });
+    return Promise.resolve();
+  }
+
+  // Nollaus: arkistoitu vanha kisa, uusi tyhjä tila ja reset-operaatio menevät
+  // levylle yhdessä transaktiossa.
+  function commitReset(freshBase, resetOp){
+    if(storageMode === 'idb'){
+      var t = idb.transaction(['kv','outbox'],'readwrite');
+      t.objectStore('kv').put(clone(freshBase), 'state');
+      t.objectStore('outbox').put(clone(resetOp));
+      return idbTxnDone(t).then(function(){
+        base = freshBase;
+        baseVersion++;
+        outbox.push(resetOp);
+      });
+    }
+    if(storageMode === 'ls'){
+      var prevBase = base, prevOutbox = outbox.slice();
+      base = freshBase;
+      baseVersion++;
+      outbox = outbox.concat([resetOp]);
+      try{
+        localStorage.setItem(LS_STATE_KEY, JSON.stringify(freshBase));
+        localStorage.setItem(LS_OUTBOX_KEY, JSON.stringify(outbox));
+        return Promise.resolve();
+      }catch(e){
+        base = prevBase; outbox = prevOutbox;
+        return Promise.reject(e);
+      }
+    }
+    base = freshBase;
+    baseVersion++;
+    outbox.push(resetOp);
+    return Promise.resolve();
+  }
+
   function persistPhoto(rec){
     photos[rec.catchId] = rec;
     if(storageMode === 'idb'){
@@ -1222,8 +1366,8 @@
         s.catches = s.catches.filter(function(c){ return c.id !== op.catch.id; });
         var ex = null;
         s.tombstones.forEach(function(t){ if(t.catch.id===op.catch.id) ex=t; });
-        if(ex){ if(op.deletedAt > ex.deletedAt) ex.deletedAt = op.deletedAt; }
-        else s.tombstones.push({catch:clone(op.catch), deletedAt:op.deletedAt});
+        if(ex){ if(op.deletedAt > ex.deletedAt){ ex.deletedAt = op.deletedAt; ex.by = op.by; } }
+        else s.tombstones.push({catch:clone(op.catch), deletedAt:op.deletedAt, by:op.by});
       }
     } else if(op.type === 'restore'){
       if(op.comp === s.competitionId){
@@ -1253,28 +1397,53 @@
     state = s;
   }
 
-  // Onko operaation vaikutus näkyvissä palvelimen dokumentissa?
+  // Kohta 4: operaatio katsotaan vahvistetuksi vain, jos sen vaikutus on
+  // POSITIIVISESTI luettavissa palvelimen näkymästä – tai jos uudempi tapahtuma
+  // on yksiselitteisesti syrjäyttänyt sen. Puuttuva tieto ei ole kuittaus:
+  // tyhjä dokumentti ei vahvista mitään.
   function opConfirmedBy(doc, op){
-    function anywhere(id){
-      if(doc.catches.some(function(c){ return c.id===id; })) return true;
-      if(doc.tombstones.some(function(t){ return t.catch.id===id; })) return true;
-      return doc.archives.some(function(a){
-        return a.catches.some(function(c){ return c.id===id; }) ||
-               a.tombstones.some(function(t){ return t.catch.id===id; });
+    function findCatch(id){
+      var hit = null;
+      doc.catches.forEach(function(c){ if(c.id===id) hit=c; });
+      if(hit) return {where:'alive', rec:hit};
+      doc.tombstones.forEach(function(t){ if(t.catch.id===id) hit={where:'tomb', rec:t}; });
+      if(hit) return hit;
+      doc.archives.forEach(function(a){
+        a.catches.forEach(function(c){ if(c.id===id && !hit) hit={where:'archived', rec:c}; });
+        a.tombstones.forEach(function(t){ if(t.catch.id===id && !hit) hit={where:'archivedTomb', rec:t}; });
       });
+      return hit;
     }
-    if(op.type === 'add') return anywhere(op.catch.id);
+    // Onko kisa vaihtunut sen jälkeen, kun operaatio luotiin? Silloin operaatio
+    // koski jo päättynyttä kisaa eikä sitä enää tarvitse toistaa.
+    function supersededByNewerCompetition(){
+      return compTs(doc.competitionId) > compTs(op.comp || '');
+    }
+
+    if(op.type === 'add'){
+      // Saaliin on löydyttävä jostain: elossa, poistettuna tai arkistoituna.
+      return !!findCatch(op.catch.id) || supersededByNewerCompetition();
+    }
     if(op.type === 'delete'){
-      var alive = null;
-      doc.catches.forEach(function(c){ if(c.id===op.catch.id) alive=c; });
-      if(alive && (alive.restoredAt||0) < op.deletedAt) return false; // poisto ei vielä perillä
-      return true;
+      var d = findCatch(op.catch.id);
+      if(!d) return supersededByNewerCompetition();  // ei tietoa = ei kuittausta
+      if(d.where === 'tomb' || d.where === 'archivedTomb'){
+        return d.rec.deletedAt >= op.deletedAt;      // poistomerkintä on perillä
+      }
+      // saalis on yhä elossa: poisto on perillä vain jos se on sittemmin
+      // palautettu uudemmalla tapahtumalla
+      return (d.rec.restoredAt || 0) > op.deletedAt;
     }
     if(op.type === 'restore'){
-      var t = null;
-      doc.tombstones.forEach(function(x){ if(x.catch.id===op.catch.id) t=x; });
-      if(t && t.deletedAt <= (op.catch.restoredAt||0)) return false; // palautus ei vielä perillä
-      return true;
+      var r = findCatch(op.catch.id);
+      if(!r) return supersededByNewerCompetition();  // tyhjä doc ei kuittaa palautusta
+      var want = op.catch.restoredAt || 0;
+      if(r.where === 'alive' || r.where === 'archived'){
+        // oikean saaliin on oltava elossa ja vähintään tämän palautusversion tasolla
+        return (r.rec.restoredAt || 0) >= want;
+      }
+      // yhä poistettuna: kuitataan vain jos poisto on tätä palautusta uudempi
+      return r.rec.deletedAt > want;
     }
     if(op.type === 'reset'){
       return compTs(doc.competitionId) >= compTs(op.newCompetitionId);
@@ -1317,22 +1486,136 @@
     return h;
   }
 
-  function fetchRemoteDoc(){
-    return timeoutFetch(JSONBIN_BASE + '?meta=false', { headers: headers() }, IO_TIMEOUT_MS)
+  // ---------------------------------------------------------------------
+  // Kirjoittaja-omisteinen tallennus
+  //
+  // JSONBin ei tue ehdollista kirjoitusta (ei If-Match / CAS), joten kahta
+  // laitetta ei voi estää ylikirjoittamasta toisiaan, jos ne kirjoittavat
+  // samaan biniin. Siksi jokainen laite kirjoittaa VAIN omaan biniinsä ja
+  // lukee kaikki. Yhdistäminen tapahtuu lukupuolella, jolloin kilpailu-
+  // tilannetta ei synny lainkaan.
+  //
+  // Jos SHARD_BINS on tyhjä, sovellus toimii vanhaan tapaan yhdellä jaetulla
+  // binillä – ja kertoo näkyvästi, ettei ylikirjoitusta silloin ole estetty.
+  // ---------------------------------------------------------------------
+  function binUrl(id){
+    return TEST ? (TEST.api + '/v3/b/' + id) : ('https://api.jsonbin.io/v3/b/' + id);
+  }
+  function shardIds(){
+    return SHARD_BINS.map(function(b){ return b.id; });
+  }
+  function isSharded(){ return SHARD_BINS.length > 0; }
+
+  // Tämän laitteen oma kirjoitusbin. Valinta säilyy laitteella; törmäys
+  // (kaksi laitetta samassa slotissa) havaitaan luettaessa ja korjataan
+  // siirtymällä vapaaseen slottiin – vahvistamattomat operaatiot ovat yhä
+  // jonossa, joten ne kirjoittuvat uuteen slottiin.
+  var myShard = null;
+  function loadShardChoice(){
+    if(!isSharded()) return null;
+    var saved = null;
+    try{ saved = localStorage.getItem(SHARD_KEY); }catch(e){}
+    var found = null;
+    SHARD_BINS.forEach(function(b){ if(b.id === saved) found = b; });
+    return found;
+  }
+  function saveShardChoice(shard){
+    myShard = shard;
+    try{ localStorage.setItem(SHARD_KEY, shard.id); }catch(e){}
+  }
+
+  function fetchOneBin(id){
+    return timeoutFetch(binUrl(id) + '?meta=false', { headers: headers() }, IO_TIMEOUT_MS)
       .then(function(res){
+        if(res.status === 404) return null;                 // biniä ei vielä ole
         if(!res.ok) throw new Error('haku epäonnistui: '+res.status);
         return res.json().catch(function(){ throw new Error('palvelimen vastaus ei ollut JSON-muotoa'); });
-      })
-      .then(function(data){ return normalizeDoc(data); });
+      });
   }
-  function putRemoteDoc(doc){
-    return timeoutFetch(JSONBIN_BASE, {
+  function putOneBin(id, doc){
+    return timeoutFetch(binUrl(id), {
       method:'PUT',
       headers: headers({'Content-Type':'application/json'}),
       body: JSON.stringify(doc)
     }, IO_TIMEOUT_MS).then(function(res){
       if(!res.ok) throw new Error('lähetys epäonnistui: '+res.status);
     });
+  }
+
+  // Lukee kaikki binit ja yhdistää ne yhdeksi näkymäksi. Tyhjä tai puuttuva
+  // bin ohitetaan; viallinen bin nostaa virheen, jolloin kirjoitus estetään.
+  function fetchRemoteState(){
+    var ids = isSharded() ? shardIds() : [TEST ? 'testbin' : JSONBIN_ID];
+    var owners = {};
+    return Promise.all(ids.map(function(id){
+      return fetchOneBin(id).then(function(raw){ return {id:id, raw:raw}; });
+    })).then(function(results){
+      var combined = null;
+      var docs = {};
+      var problems = [];
+      results.forEach(function(r){
+        if(r.raw === null) return;
+        if(r.raw && typeof r.raw === 'object' && r.raw.owner) owners[r.id] = r.raw.owner;
+        // täysin tyhjä bin (esim. juuri luotu {}) ei ole virhe
+        if(r.raw && typeof r.raw==='object' && !Array.isArray(r.raw) &&
+           r.raw.schemaVersion === undefined && !r.raw.catches) return;
+        var st;
+        try{
+          st = normalizeDoc(r.raw);
+        }catch(e){
+          problems.push({bin:r.id, message:e.message, rejected:e.rejected||[]});
+          return;
+        }
+        docs[r.id] = st;
+        combined = combined ? mergeStates(combined, st) : st;
+      });
+      if(problems.length){
+        remoteDataError = {
+          message: problems.map(function(p){ return p.bin + ': ' + p.message; }).join(' | '),
+          rejected: problems.reduce(function(a,p){ return a.concat(p.rejected); }, [])
+        };
+        var err = new Error('palvelimen data ei läpäissyt tarkistusta – kirjoitus estetty');
+        err.name = 'RemoteDataError';
+        throw err;
+      }
+      remoteDataError = null;
+      return {state: combined || emptyState(), owners: owners, docs: docs};
+    });
+  }
+
+  // Kirjoittaa VAIN tämän laitteen oman binin. Muiden binien sisältö ei voi
+  // kadota, koska niihin ei kosketa.
+  function pushOwnShard(mine){
+    if(!isSharded()){
+      return putOneBin(TEST ? 'testbin' : JSONBIN_ID, pushDoc(mine));
+    }
+    var doc = pushDoc(mine);
+    doc.owner = DEVICE_ID;
+    return putOneBin(myShard.id, doc);
+  }
+
+  // Tämän laitteen oma osuus: kaikki mitä se on itse kirjannut tai poistanut.
+  // Muiden laitteiden tietueita ei kirjoiteta omaan biniin, jotta niiden
+  // myöhemmät muutokset eivät jäisi vanhan kopion alle.
+  function mineCatch(c){ return c.origin === DEVICE_ID || c.adoptedBy === DEVICE_ID; }
+  function mineTomb(t){ return t.by === DEVICE_ID || t.adoptedBy === DEVICE_ID; }
+
+  function ownContribution(){
+    if(!isSharded()) return state;                     // jaettu bin: koko näkymä
+    var own = emptyState();
+    own.competitionId = state.competitionId;
+    own.catches = state.catches.filter(mineCatch);
+    own.tombstones = state.tombstones.filter(mineTomb);
+    own.archives = state.archives.map(function(a){
+      return {
+        competitionId: a.competitionId,
+        archivedAt: a.archivedAt,
+        catches: a.catches.filter(mineCatch),
+        tombstones: a.tombstones.filter(mineTomb)
+      };
+    }).filter(function(a){ return a.catches.length || a.tombstones.length; });
+    own.history = state.history.filter(function(h){ return h.by === DEVICE_ID; });
+    return own;
   }
 
   function uploadPhotoData(dataUrl){
@@ -1381,41 +1664,102 @@
     return chain;
   }
 
+  // Varaa tälle laitteelle oma kirjoitusslotti. Jos aiemmin valittu slotti on
+  // toisen laitteen käytössä, siirrytään vapaaseen – vahvistamattomat
+  // operaatiot ovat yhä jonossa, joten ne kirjoittuvat uuteen slottiin.
+  // Slotin varaus on julkaistava heti, muuten kaksi laitetta voi valita saman
+  // slotin: pelkkä muistiin tehty varaus ei näy muille ennen ensimmäistä
+  // kirjoitusta, ja jälkimmäinen kirjoittaisi edellisen päälle.
+  function ensureShard(owners){
+    if(!isSharded()) return Promise.resolve(true);
+    if(myShard && owners[myShard.id] === DEVICE_ID) return Promise.resolve(true);
+
+    var free = null;
+    SHARD_BINS.forEach(function(b){
+      if(free) return;
+      if(!owners[b.id] || owners[b.id] === DEVICE_ID) free = b;
+    });
+    if(!free) return Promise.resolve(false);
+
+    saveShardChoice(free);
+    // varataan slotti näkyvästi ja tarkistetaan luennalla, että se jäi meille
+    var claim = pushDoc(emptyState());
+    claim.owner = DEVICE_ID;
+    return putOneBin(free.id, claim)
+      .then(function(){ return fetchOneBin(free.id); })
+      .then(function(raw){
+        if(raw && raw.owner === DEVICE_ID) return true;
+        // joku ehti ensin – kokeillaan seuraavaa vapaata slottia
+        var taken = {};
+        Object.keys(owners).forEach(function(k){ taken[k] = owners[k]; });
+        taken[free.id] = raw && raw.owner ? raw.owner : 'muu';
+        myShard = null;
+        return ensureShard(taken);
+      });
+  }
+
   function syncOnce(){
-    return fetchRemoteDoc().then(function(remote){
+    if(localDataError){
+      var le = new Error(blockedReason());
+      le.name = 'LocalDataError';
+      return Promise.reject(le);
+    }
+    return fetchRemoteState().then(function(remoteRes){
+      return serialize(function(){ return syncCommit(remoteRes); });
+    });
+  }
+
+  function syncCommit(remoteRes){
+    return Promise.resolve().then(function(){
+      var remote = remoteRes.state;
       refreshState();
-      var merged = mergeStates(state, remote);
-      var mergedCanon = canonicalDoc(merged);
-      var pushNeeded = mergedCanon !== canonicalDoc(remote);
-      var step = Promise.resolve(remote);
-      if(pushNeeded){
-        step = putRemoteDoc(pushDoc(merged, Date.now()))
-          .then(function(){ return fetchRemoteDoc(); }); // varmistushaku
+      var computedFrom = baseVersion;
+
+      return ensureShard(remoteRes.owners).then(function(gotSlot){
+      if(!gotSlot){
+        throw new Error('kaikki kirjoitusslotit ovat varattuja – lisää SHARD_BINS-listaan slotti');
       }
-      return step.then(function(verifyDoc){
-        // Vahvistus: operaatio poistuu jonosta vasta kun sen vaikutus on
-        // luettu takaisin palvelimelta. PUT:n kadonnut vastaus ei siksi
-        // aiheuta kaksoiskirjausta eikä hukkaa mitään.
-        var confirmed = outbox.filter(function(op){ return opConfirmedBy(verifyDoc, op); });
-        // Myös vain muistiin jääneet operaatiot vapautuvat, kun palvelin on ne
-        // vahvistanut – muuten ne jäisivät ikuisesti virhetilaan.
-        memoryOnlyOps = memoryOnlyOps.filter(function(op){ return !opConfirmedBy(verifyDoc, op); });
-        var mergedAfter = mergeStates(state, verifyDoc);
-        confirmedIds = {};
-        verifyDoc.catches.forEach(function(c){ confirmedIds[c.id]=true; });
-        verifyDoc.tombstones.forEach(function(t){ confirmedIds[t.catch.id]=true; });
-        verifyDoc.archives.forEach(function(a){
-          a.catches.forEach(function(c){ confirmedIds[c.id]=true; });
-          a.tombstones.forEach(function(t){ confirmedIds[t.catch.id]=true; });
-        });
-        return deleteOps(confirmed.map(function(o){ return o.opId; }))
-          .then(function(){ return persistBase(mergedAfter); })
+
+      // Kirjoitetaan vain oma osuus, ja vain jos se muuttui. Muiden laitteiden
+      // binejä ei kosketa, joten niiden data ei voi kadota tämän kirjoituksen
+      // takia.
+      var merged = mergeStates(state, remote);
+      var mine = isSharded() ? ownContribution() : merged;
+      var mineCanon = canonicalDoc(mine);
+      var onServer = isSharded()
+        ? (remoteRes.docs[myShard.id] || emptyState())
+        : remote;
+      var pushNeeded = mineCanon !== canonicalDoc(onServer);
+
+      var step = Promise.resolve(remoteRes);
+      if(pushNeeded){
+        step = pushOwnShard(mine)
+          .then(function(){ return fetchRemoteState(); });   // varmistushaku
+      }
+
+      return step.then(function(verifyRes){
+        var verify = verifyRes.state;
+        // Operaatio poistuu jonosta vasta kun sen vaikutus on luettu takaisin
+        // palvelimelta. Kadonnut PUT-vastaus ei siksi aiheuta kaksoiskirjausta
+        // eikä hukkaa mitään.
+        var confirmedOps = outbox.filter(function(op){ return opConfirmedBy(verify, op); });
+        var stillMemoryOnly = memoryOnlyOps.filter(function(op){ return !opConfirmedBy(verify, op); });
+        var mergedAfter = mergeStates(state, verify);
+
+        var ids = {};
+        collectIds(verify, ids);
+        verify.archives.forEach(function(a){ collectIds(a, ids); });
+
+        // Kohta 2: uusi perustila ja vahvistettujen operaatioiden poisto
+        // menevät levylle YHDESSÄ transaktiossa. Muistissa olevat rakenteet
+        // päivitetään vasta kun transaktio on valmis, eikä virhettä niellä.
+        return commitSync(mergedAfter, confirmedOps.map(function(o){ return o.opId; }), computedFrom)
           .then(function(){
+            memoryOnlyOps = stillMemoryOnly;
+            confirmedIds = ids;
             refreshState();
             // Varmuuskopio jokaisesta sisältömuutoksesta, jotta tuorein
-            // tilannekuva on aina ajan tasalla. Tyhjää tilaa ei kopioida (siitä
-            // ei ole palautuksessa hyötyä), ja vanhimmat karsiutuvat
-            // BACKUP_CAP-rajan mukaan.
+            // tilannekuva on aina ajan tasalla.
             var canon = canonicalDoc(mergedAfter);
             if(mergedAfter.catches.length > 0 && canon !== lastBackupCanon){
               lastBackupAt = Date.now();
@@ -1425,11 +1769,24 @@
             notifyOtherTabs();
           });
       });
+      });
     });
+  }
+
+  function collectIds(doc, into){
+    (doc.catches||[]).forEach(function(c){ into[c.id]=true; });
+    (doc.tombstones||[]).forEach(function(t){ into[t.catch.id]=true; });
+    return into;
   }
 
   function doFlush(){
     if(!isSyncConfigured()){ renderSyncStatus(); return Promise.resolve(); }
+    if(localDataError){
+      syncState.lastError = blockedReason();
+      syncState.lastErrorAt = Date.now();
+      renderSyncStatus();
+      return Promise.resolve();
+    }
     // Jos synkka on jo käynnissä, palautetaan sama lupaus – odottaja ei saa
     // luulla lähetystä valmiiksi ennen kuin se oikeasti on.
     if(flushRunning) return currentFlush;
@@ -1447,6 +1804,13 @@
       })
       .catch(function(e){
         syncState.phase = 'idle';
+        if(e && e.name === 'StaleSync'){
+          // paikallinen tila ehti muuttua – ei virhe, vaan uusi kierros heti
+          syncState.phase = 'idle';
+          nextAllowedAt = 0;
+          setTimeout(function(){ flushNow(true); }, 0);
+          return;
+        }
         syncState.lastError = String(e && e.message || e);
         syncState.lastErrorAt = Date.now();
         syncState.fails++;
@@ -1502,6 +1866,12 @@
   }
   function renderSyncStatus(){
     var pc = pendingCounts();
+    if(writesBlocked()){
+      setSyncStatus('error', blockedReason() + ' – lähetys pysäytetty');
+      showStorageBanner(blockedReason() +
+        ' Tietoja ei ole poistettu, mutta niitä ei lähetetä ennen kuin ongelma on selvitetty. Ota varmuuskopio Jaa-välilehdeltä.');
+      return;
+    }
     if(!isSyncConfigured()){
       setSyncStatus('', 'Ei yhteistä tallennusta määritetty' + (pc.ops ? ' · '+pc.ops+' tallennettu laitteelle' : ''));
       return;
@@ -1584,7 +1954,8 @@
   }
   function updateSaveEnabled(){
     var len = parseFloat(document.getElementById('lengthInput').value);
-    document.getElementById('saveCatchBtn').disabled = !(isLoggingOpen() && selectedAngler && validLength(len));
+    document.getElementById('saveCatchBtn').disabled =
+      savingCatch || !(isLoggingOpen() && selectedAngler && validLength(len));
   }
 
   // ---------- Kisa-aika ja laskuri ----------
@@ -1694,7 +2065,13 @@
   // Saalis, kuva ja jonomerkintä tallennetaan pysyvästi YHDESSÄ transaktiossa
   // ENNEN onnistumisilmoitusta. Kuvan lataus verkkoon tapahtuu vasta taustalla,
   // joten epäonnistunut lataus ei hukkaa kuvaa eikä saalista.
+  // Kohta 7: tallennus on asynkroninen, joten nopea kaksoispainallus ehtisi
+  // luoda kaksi eri tunnistetta samasta kalasta. Saving-lippu ja napin lukitus
+  // estävät sen.
+  var savingCatch = false;
+
   function saveCatch(){
+    if(savingCatch) return;
     var lenInput = document.getElementById('lengthInput');
     var len = parseFloat(lenInput.value);
     if(!isLoggingOpen()){
@@ -1706,6 +2083,11 @@
       return;
     }
     if(!selectedAngler || !validLength(len)) return;
+
+    savingCatch = true;
+    var saveBtn = document.getElementById('saveCatchBtn');
+    saveBtn.disabled = true;
+
     var boat = boatOfAngler(selectedAngler);
     var c = {
       id: makeId(),
@@ -1713,7 +2095,8 @@
       boat: boat ? boat.id : null,
       species: selectedSpecies,
       length: len,
-      time: Date.now()
+      time: Date.now(),
+      origin: DEVICE_ID          // kirjoittaja-omisteinen tallennus tarvitsee tämän
     };
     var op = {opId:c.id, type:'add', comp: state.competitionId, catch:c, at:Date.now(), attempts:0};
     var photoRec = pendingPhotoDataUrl ? {catchId:c.id, dataUrl:pendingPhotoDataUrl, uploadedUrl:null, attempts:0} : null;
@@ -1723,7 +2106,6 @@
       flashMsg('logMsg', name + ' – ' + formatCm(len) + (sp!=='Ahven' ? ' (' + sp + ')' : '') + ' kirjattu · tallennettu laitteelle');
       lenInput.value = '';
       clearPendingPhoto();
-      updateSaveEnabled();
       refreshState();
       renderAll();
       renderSyncStatus();
@@ -1738,6 +2120,9 @@
       showStorageBanner('TALLENNUS LAITTEELLE EPÄONNISTUI – saalis on vain muistissa. Älä sulje sivua, ja ota tuloksista kuvakaappaus.');
       flashMsg('logMsg', 'VIRHE: tallennus laitteelle epäonnistui ('+String(e && e.message || e)+')', true);
       flushNow(true); // yritetään silti lähettää palvelimelle suoraan muistista
+    }).then(function(){
+      savingCatch = false;
+      updateSaveEnabled();
     });
   }
 
@@ -1747,7 +2132,7 @@
     var target = null;
     state.catches.forEach(function(c){ if(c.id===id) target=c; });
     if(!target) return;
-    var op = {opId:'del-'+id+'-'+Date.now(), type:'delete', comp: state.competitionId, catch: clone(target), deletedAt: Date.now(), at:Date.now(), attempts:0};
+    var op = {opId:'del-'+id+'-'+Date.now(), type:'delete', comp: state.competitionId, catch: clone(target), deletedAt: Date.now(), by: DEVICE_ID, at:Date.now(), attempts:0};
     persistOp(op, null).then(function(){
       appendHistory({op:'delete', id:id, angler:target.angler, length:target.length, at:Date.now()});
       refreshState();
@@ -1763,7 +2148,7 @@
   function restoreCatch(tomb){
     var c = clone(tomb.catch);
     c.restoredAt = Date.now();
-    var op = {opId:'res-'+c.id+'-'+Date.now(), type:'restore', comp: state.competitionId, catch:c, at:Date.now(), attempts:0};
+    var op = {opId:'res-'+c.id+'-'+Date.now(), type:'restore', comp: state.competitionId, catch:c, by: DEVICE_ID, at:Date.now(), attempts:0};
     persistOp(op, null).then(function(){
       appendHistory({op:'restore', id:c.id, angler:c.angler, length:c.length, at:Date.now()});
       refreshState();
@@ -1778,6 +2163,7 @@
   }
 
   function appendHistory(h){
+    h.by = DEVICE_ID;
     base.history.push(h);
     if(base.history.length > HISTORY_CAP) base.history = base.history.slice(base.history.length - HISTORY_CAP);
     persistBase(base).catch(function(){});
@@ -2029,6 +2415,7 @@
     a.catches.forEach(function(c){
       var cc = clone(c);
       cc.restoredAt = now;
+      cc.adoptedBy = DEVICE_ID;
       var m = {};
       restored.catches.forEach(function(x){ m[x.id]=true; });
       if(!m[cc.id]) restored.catches.push(cc);
@@ -2109,10 +2496,14 @@
 
   // Varmuuskopio sisältää myös kuvatiedostot: laitteen omat kuvat paikallisesta
   // varastosta, muiden laitteiden kuvat yritetään noutaa URL-osoitteesta.
+  // Kohta 3: vienti kirjoittaa saman schemaVersion-tunnuksen jota normalizeDoc
+  // tarkistaa, joten varmuuskopio kelpaa suoraan takaisin tuotavaksi.
+  // Kohta 6: mukaan otetaan myös arkistoitujen kisojen kuvat, ja puuttuvista
+  // kerrotaan nimeltä eikä pelkkänä lukumääränä.
   function buildExportPayload(){
     refreshState();
     var payload = {
-      version: 2,
+      schemaVersion: SCHEMA_VERSION,
       exportedAt: Date.now(),
       competitionId: state.competitionId,
       catches: clone(state.catches),
@@ -2120,23 +2511,36 @@
       archives: clone(state.archives),
       history: clone(state.history),
       photos: {},
-      photosMissing: 0
+      photosMissing: []
     };
-    var chain = Promise.resolve();
+
+    // kaikki saaliit joilla voi olla kuva: elossa, poistetut ja arkistoidut
+    var all = state.catches.slice();
+    state.tombstones.forEach(function(t){ all.push(t.catch); });
+    state.archives.forEach(function(a){
+      a.catches.forEach(function(c){ all.push(c); });
+      a.tombstones.forEach(function(t){ all.push(t.catch); });
+    });
+
+    var seen = {};
     var wanted = [];
-    state.catches.concat(state.tombstones.map(function(t){ return t.catch; })).forEach(function(c){
+    all.forEach(function(c){
+      if(!c || !c.id || seen[c.id]) return;
+      seen[c.id] = true;
       if(photos[c.id] && photos[c.id].dataUrl){
-        payload.photos[c.id] = photos[c.id].dataUrl;
+        payload.photos[c.id] = photos[c.id].dataUrl;   // laitteen oma kopio
       } else if(c.photoUrl){
-        wanted.push(c);
+        wanted.push(c);                                 // haetaan verkosta
       }
     });
+
+    var chain = Promise.resolve();
     wanted.forEach(function(c){
       chain = chain.then(function(){
         return fetchPhotoAsDataUrl(c.photoUrl).then(function(dataUrl){
           payload.photos[c.id] = dataUrl;
         }).catch(function(){
-          payload.photosMissing++;
+          payload.photosMissing.push({id:c.id, angler:c.angler, url:c.photoUrl});
         });
       });
     });
@@ -2188,7 +2592,11 @@
       a.click();
       a.remove();
       setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-      flashMsg('shareMsg','Varmuuskopio ladattu' + (payload.photosMissing ? ' ('+payload.photosMissing+' kuvaa jäi puuttumaan)' : ' kuvineen'));
+      var miss = payload.photosMissing.length;
+      flashMsg('shareMsg','Varmuuskopio ladattu' +
+        (miss ? ' – HUOM: ' + miss + (miss===1?' kuva':' kuvaa') + ' ei ollut saatavilla ('+
+                payload.photosMissing.map(function(m){ return m.angler||m.id; }).join(', ')+')'
+              : ' kuvineen'), miss > 0);
     });
   }
 
@@ -2196,8 +2604,16 @@
   // restoreMode=true: palautus – tuodut saaliit ohittavat poistot ja nollauksen.
   function applyImport(parsed, restoreMode){
     var incoming;
-    try{ incoming = normalizeDoc(parsed); }
-    catch(e){ flashMsg('shareMsg','Ei kelvollista dataa – tarkista teksti', true); return; }
+    try{
+      incoming = normalizeDoc(parsed);
+    }catch(e){
+      // Kohta 5: kerrotaan mikä meni pieleen, ei vain "ei kelvollista dataa".
+      var detail = e.rejected && e.rejected.length
+        ? ' (' + e.rejected.length + ' tietuetta hylättiin)'
+        : '';
+      flashMsg('shareMsg','Varmuuskopiota ei voitu lukea: ' + e.message + detail, true);
+      return;
+    }
 
     var now = Date.now();
     if(restoreMode){
@@ -2213,10 +2629,21 @@
       incoming.catches = all.map(function(c){
         var cc = clone(c);
         cc.restoredAt = now;
+        cc.adoptedBy = DEVICE_ID;    // tämä laite ottaa vastuun julkaisusta
         return cc;
       });
     }
 
+    if(!restoreMode){
+      // yhdistämisessäkin tuodut tietueet on julkaistava, muuten ne jäisivät
+      // vain tälle laitteelle
+      incoming.catches = incoming.catches.map(function(c){
+        var cc = clone(c); cc.adoptedBy = DEVICE_ID; return cc;
+      });
+      incoming.tombstones = incoming.tombstones.map(function(t){
+        var tt = clone(t); tt.adoptedBy = DEVICE_ID; return tt;
+      });
+    }
     refreshState();
     var before = {};
     state.catches.forEach(function(c){ before[c.id]=true; });
@@ -2237,8 +2664,17 @@
       });
     });
 
-    photoChain.then(function(){
-      return persistBase(merged);
+    serialize(function(){
+      return photoChain.then(function(){
+        // lasketaan yhdistäminen vasta lukon sisällä tuoreesta tilasta
+        refreshState();
+        var wasThere = {};
+        state.catches.forEach(function(c){ wasThere[c.id] = true; });
+        var fresh = mergeStates(state, incoming);
+        fresh.history = merged.history;
+        added = fresh.catches.filter(function(c){ return !wasThere[c.id]; }).length;
+        return persistBase(fresh);
+      });
     }).then(function(){
       refreshState();
       renderAll();
@@ -2278,14 +2714,12 @@
     if(fresh.history.length > HISTORY_CAP) fresh.history = fresh.history.slice(fresh.history.length - HISTORY_CAP);
 
     var oldComp = state.competitionId;
-    var resetOp = {opId:'reset-'+newComp, type:'reset', archivedCompetitionId:oldComp, newCompetitionId:newComp, archivedAt:now, at:now, attempts:0};
-    var dropOps = outbox.filter(function(o){ return o.comp === oldComp; }).map(function(o){ return o.opId; });
+    var resetOp = {opId:'reset-'+newComp, type:'reset', archivedCompetitionId:oldComp, newCompetitionId:newComp, archivedAt:now, by: DEVICE_ID, at:now, attempts:0};
 
-    deleteOps(dropOps).then(function(){
-      return persistOp(resetOp, null);
-    }).then(function(){
-      return persistBase(fresh);
-    }).then(function(){
+    // Vanhan kisan lähettämättömiä operaatioita EI pudoteta jonosta: ne ovat
+    // arkistossa mukana ja kuittaantuvat itsestään, kun palvelin on siirtynyt
+    // uuteen kisaan. Näin keskeytys ei voi hävittää lähettämätöntä saalista.
+    commitReset(fresh, resetOp).then(function(){
       refreshState();
       renderAll();
       renderSyncStatus();
@@ -2329,13 +2763,15 @@
       ]);
     }).then(function(res){
       if(res[0]){
-        try{ base = normalizeDoc(res[0]); }catch(e){ base = emptyState(); }
-      } else {
-        // ensimmäinen käynnistys: siirrä vanhan version data talteen
         try{
-          var raw = localStorage.getItem(LEGACY_LS_KEY);
-          if(raw) base = normalizeDoc(JSON.parse(raw));
-        }catch(e){}
+          base = normalizeDoc(res[0]);
+        }catch(e){
+          // Paikallinen tila on rikki. Sitä EI korvata tyhjällä: raakadata
+          // jätetään paikalleen, käyttäjälle kerrotaan, ja palvelimelle
+          // kirjoittaminen estetään kunnes tilanne on selvitetty.
+          localDataError = {message: e.message, raw: res[0], rejected: e.rejected || []};
+          base = emptyState();
+        }
       }
       outbox = res[1] || [];
       photos = {};
@@ -2344,7 +2780,7 @@
       // IndexedDB ei käytettävissä – localStorage-varapolku
       storageMode = 'ls';
       try{
-        var raw2 = localStorage.getItem(LS_STATE_KEY) || localStorage.getItem(LEGACY_LS_KEY);
+        var raw2 = localStorage.getItem(LS_STATE_KEY);
         if(raw2) base = normalizeDoc(JSON.parse(raw2));
         var rawOut = localStorage.getItem(LS_OUTBOX_KEY);
         outbox = rawOut ? JSON.parse(rawOut) : [];
@@ -2416,7 +2852,13 @@
       refreshState();
       renderAll();
       renderSyncStatus();
+      if(isSyncConfigured() && !isSharded()){
+        showStorageBanner('Huom: käytössä on yksi jaettu tallennusbin. JSONBin ei tue ehdollista kirjoitusta, ' +
+          'joten kahden puhelimen yhtäaikainen tallennus voi ylikirjoittaa toisensa. ' +
+          'Ota SHARD_BINS käyttöön ennen kisaa.');
+      }
       if(isSyncConfigured()){
+        myShard = loadShardChoice();
         flushNow(true);
         setInterval(function(){ flushNow(false); }, POLL_INTERVAL_MS);
         window.addEventListener('online', function(){ flushNow(true); });
@@ -2442,6 +2884,13 @@
           },
           statusOf: catchStatus,
           phase: function(){ return compPhase(); },
+          sharded: function(){ return isSharded(); },
+          shard: function(){ return myShard ? myShard.id : null; },
+          integrity: function(){
+            return {local: localDataError, remote: remoteDataError, blocked: writesBlocked()};
+          },
+          exportPayload: function(){ return buildExportPayload(); },
+          breakCommit: function(on){ breakCommitForTest = !!on; },
           ready: true
         };
       }
