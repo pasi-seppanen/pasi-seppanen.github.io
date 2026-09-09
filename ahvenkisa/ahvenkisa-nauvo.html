@@ -131,12 +131,21 @@
   }
 
   #storageBanner{
+    font-size: 13px;
+    padding: 9px 16px;
+    text-align: center;
+  }
+  #storageBanner.danger{
     background: var(--danger);
     color: #fff;
-    font-size: 13.5px;
     font-weight: 600;
+    font-size: 13.5px;
     padding: 10px 16px;
-    text-align: center;
+  }
+  #storageBanner.note{
+    background: rgba(217,178,111,0.22);
+    color: var(--ink);
+    border-bottom: 1px solid rgba(217,178,111,0.6);
   }
 
   main{
@@ -1897,10 +1906,10 @@
       setSyncStatus('error', 'Ei vielä yhteyttä');
     }
   }
-  function showStorageBanner(msg){
+  function showStorageBanner(msg, level){
     var b = document.getElementById('storageBanner');
     b.textContent = msg;
-    b.classList.remove('hidden');
+    b.className = (level === 'note') ? 'note' : 'danger';
   }
 
   // =====================================================================
@@ -2787,7 +2796,7 @@
         if(!Array.isArray(outbox)) outbox = [];
         // varmista että localStorageen oikeasti voi kirjoittaa
         localStorage.setItem(LS_STATE_KEY, JSON.stringify(base));
-        showStorageBanner('Huom: laajempi paikallinen tallennus ei ole käytettävissä – kuvat eivät säily sivun sulkemisen yli.');
+        showStorageBanner('Huom: laajempi paikallinen tallennus ei ole käytettävissä – kuvat eivät säily sivun sulkemisen yli.', 'note');
       }catch(e){
         storageMode = 'memory';
         base = emptyState();
@@ -2853,9 +2862,11 @@
       renderAll();
       renderSyncStatus();
       if(isSyncConfigured() && !isSharded()){
-        showStorageBanner('Huom: käytössä on yksi jaettu tallennusbin. JSONBin ei tue ehdollista kirjoitusta, ' +
-          'joten kahden puhelimen yhtäaikainen tallennus voi ylikirjoittaa toisensa. ' +
-          'Ota SHARD_BINS käyttöön ennen kisaa.');
+        // Käyttäjälle kerrotaan vain se, mitä hän voi itse tehdä. Tekninen
+        // taustasyy (JSONBinistä puuttuu ehdollinen kirjoitus, korjaus on ottaa
+        // SHARD_BINS käyttöön) on kuvattu tuon vakion kommentissa.
+        showStorageBanner('Pidä sovellus auki koko kisan ajan. Jos suljet sen heti kirjauksen jälkeen, ' +
+          'saalis voi harvinaisessa tapauksessa jäädä muilta näkymättä.', 'note');
       }
       if(isSyncConfigured()){
         myShard = loadShardChoice();
